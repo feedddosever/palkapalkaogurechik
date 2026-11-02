@@ -18,7 +18,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | --- | ------------------------------------------------------------------------------- | --------------------------------- | ------ |
 | 0   | Plan & repo hygiene                                                             | —                                 | ✅     |
 | 1   | Foundation (app scaffold, DB, config, CI, design system)                        | —                                 | ✅     |
-| 2   | Domain model, seed data, demo supplier storefronts                              | —                                 | ⬜     |
+| 2   | Domain model, seed data, demo supplier storefronts                              | —                                 | ✅     |
 | 3   | Guard core: deterministic policy engine                                         | —                                 | ⬜     |
 | 4   | PayPal layer + sandbox-faithful simulator                                       | —                                 | ⬜     |
 | 5   | Catalog: Channel3 + demo suppliers + market prices                              | Channel3 key (optional)           | ⬜     |
@@ -360,7 +360,7 @@ docs/                    PLAN.md, ARCHITECTURE.md, SUBMISSION.md, VIDEO_SCRIPT.m
 **Done when:** `npm i && npm run dev` serves a styled placeholder with **zero env vars**; `npm test` and `npm run build`
 pass; CI green on the PR.
 
-### Step 2: Domain model, seed data, demo supplier storefronts
+### Step 2: Domain model, seed data, demo supplier storefronts ✅
 
 **Build**
 
@@ -450,6 +450,10 @@ rules text compiles to the expected policy; both headline attacks get high-risk 
 - Execution: ALLOW → capture (idempotent) → payout → receipt → ledger; NEEDS_APPROVAL → approval record + notify;
   BLOCK → explanation + trust demotion + notify. Approval decisions resume execution.
 - Scripted "weekly restock" task + free-form tasks.
+- **Agent modes:** `standard` (honest agent) and `compromised` (simulates an agent that has already been
+  hijacked: it follows instructions found in tool results). A capable model often ignores the injection on its
+  own, so the demo and Attack Lab use `compromised` mode to show the point: **Leash must not depend on the agent
+  being smart.** The UI labels this mode clearly.
 
 **Done when:** in simulator mode, `npm run demo:restock` produces the expected story deterministically (with fixture AI):
 N allowed, 1 needs approval, 2 attacks blocked, correct ledger rows, retry produces no double capture.

@@ -59,7 +59,7 @@ export default function Home() {
               <CardDescription>Weekly restock, live</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
-              <LeashMeter held={500} spent={212.4} pending={140} level={1} />
+              <LeashMeter held={500} spent={200} pending={141} level={1} />
               <Timeline>
                 <TimelineItem
                   icon={<BadgeCheck />}
@@ -73,7 +73,7 @@ export default function Home() {
                   icon={<Gauge />}
                   tone="review"
                   title="Oat & Co · oat milk, 4 cases"
-                  meta="$140.00"
+                  meta="$141.00"
                 >
                   <VerdictBadge verdict="NEEDS_APPROVAL" /> Over your $120 limit, sent to your phone
                 </TimelineItem>

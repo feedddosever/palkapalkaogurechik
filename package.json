@@ -16,7 +16,8 @@
     "db:migrate": "tsx scripts/db-migrate.ts",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "ci": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "ci": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "db:reset": "tsx scripts/db-reset.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.14",
