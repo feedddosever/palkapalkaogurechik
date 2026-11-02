@@ -1,5 +1,8 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { canonicalJson } from "@/lib/canonical-json";
+
+export { canonicalJson };
 
 /**
  * Leash categories. Matching happens on structured product data (Channel3 / storefront
@@ -85,16 +88,6 @@ export const PolicySchema = z.object({
 });
 
 export type Policy = z.infer<typeof PolicySchema>;
-
-/** Canonical JSON (sorted keys) so the hash is stable regardless of key order. */
-export function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
-  const entries = Object.entries(value as Record<string, unknown>)
-    .filter(([, v]) => v !== undefined)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(",")}}`;
-}
 
 export function policyHash(policy: Policy): string {
   return `sha256:${createHash("sha256").update(canonicalJson(policy)).digest("hex")}`;

@@ -14,6 +14,7 @@ import { ALL_LAYERS, runGuard, type GuardDecision, type GuardLayers } from "@/se
 import type { GuardRequest, Verdict } from "@/server/guard/types";
 import { getPayPal, PayPalError, recordPayPalOp, type PayPalGateway } from "@/server/paypal";
 import { demoteOnAttack } from "@/server/trust/engine";
+import { issueReceipt } from "@/server/receipts/receipts";
 import { getActiveCycle, getActiveMandate } from "./cycles";
 
 /**
@@ -478,6 +479,22 @@ export async function executePayment(
       .update(t.paymentRequests)
       .set({ status: "executed", executedAt: new Date() })
       .where(eq(t.paymentRequests.id, requestId));
+    try {
+      // The capture already points at this receipt id (invoice_id); now sign the receipt that
+      // points back at the PayPal ids. Money has moved, so a signing hiccup must not undo that.
+      await issueReceipt(db, {
+        receiptId,
+        requestId,
+        paypal: {
+          mode: paypal.mode,
+          authorizationId: cycle.paypalAuthorizationId!,
+          captureId,
+          payoutBatchId: payout.batchId,
+        },
+      });
+    } catch (err) {
+      console.error(`[leash] receipt ${receiptId} for ${requestId} could not be issued:`, err);
+    }
     return { ok: true, captureId, payoutBatchId: payout.batchId, receiptId };
   } catch (err) {
     return fail(

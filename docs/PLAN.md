@@ -24,7 +24,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 5   | Catalog: Channel3 + demo suppliers + market prices                              | Channel3 key (optional)           | ✅     |
 | 6   | AI layer: compiler, injection scanner, judge, writers                           | Anthropic key (for live)          | ✅     |
 | 7   | Ops agent + execution pipeline                                                  | —                                 | ✅     |
-| 8   | Signed intent receipts + public verifier                                        | —                                 | ⬜     |
+| 8   | Signed intent receipts + public verifier                                        | —                                 | ✅     |
 | 9   | Product UI: landing, onboarding, control tower, agent console, mobile approvals | —                                 | ⬜     |
 | 10  | Ledger on AG Grid (+ natural-language queries)                                  | AG Grid license (optional)        | ⬜     |
 | 11  | Autonomy levels & trust engine                                                  | —                                 | ⬜     |
@@ -479,7 +479,7 @@ rules text compiles to the expected policy; both headline attacks get high-risk 
 **Done when:** in simulator mode, `npm run demo:restock` produces the expected story deterministically (with fixture AI):
 N allowed, 1 needs approval, 2 attacks blocked, correct ledger rows, retry produces no double capture.
 
-### Step 8: Signed intent receipts + public verifier
+### Step 8: Signed intent receipts + public verifier ✅
 
 **Build**
 
@@ -487,6 +487,11 @@ N allowed, 1 needs approval, 2 attacks blocked, correct ledger rows, retry produ
 - Receipt ID attached to the PayPal capture (`invoice_id` / `note_to_payer`) so it is visible in PayPal.
 - `/verify/[id]`: public page showing the chain (owner intent → cart → guard decision → PayPal IDs), signature ✓,
   tamper detection, QR code; `/.well-known/leash-keys.json`.
+
+- **As built:** receipt id allocated before capture (sent as PayPal `invoice_id`), signed after the payout
+  with the PayPal ids, so both sides point at each other. Production key from `RECEIPT_SIGNING_KEY`
+  (`npm run keys:generate`); dev key generated once and persisted; every public key kept in `signing_keys`
+  and published as a JWK set. `/api/receipts/[id]` returns the signed JSON + verification.
 
 **Done when:** verifying a stored receipt passes; changing one byte fails; page renders on mobile.
 

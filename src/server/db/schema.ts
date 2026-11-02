@@ -513,3 +513,18 @@ export const paypalSimIdempotency = pgTable("paypal_sim_idempotency", {
   response: jsonb("response").notNull(),
   createdAt: createdAt(),
 });
+
+// ─── Receipt signing keys ───────────────────────────────────────────────────
+
+/**
+ * Every Ed25519 key that has ever signed a receipt (public part), so old receipts stay
+ * verifiable after rotation. The private key is stored ONLY for the auto-generated dev key;
+ * production keys come from RECEIPT_SIGNING_KEY and never touch the database.
+ */
+export const signingKeys = pgTable("signing_keys", {
+  kid: text("kid").primaryKey(),
+  publicKeySpki: text("public_key_spki").notNull(),
+  privateKeyPkcs8: text("private_key_pkcs8"),
+  source: text("source", { enum: ["env", "generated"] }).notNull(),
+  createdAt: createdAt(),
+});

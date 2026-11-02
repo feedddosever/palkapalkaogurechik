@@ -15,6 +15,13 @@
       "when": 1793633885607,
       "tag": "0001_paypal_simulator",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793648558683,
+      "tag": "0002_signing_keys",
+      "breakpoints": true
     }
   ]
 }
