@@ -17,10 +17,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build",
-    "db:reset": "tsx scripts/db-reset.ts"
+    "db:reset": "tsx scripts/db-reset.ts",
+    "test:sandbox": "vitest run tests/sandbox"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.14",
+    "@paypal/paypal-server-sdk": "^2.5.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.66.0",

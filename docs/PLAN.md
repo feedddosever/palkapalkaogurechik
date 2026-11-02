@@ -20,7 +20,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 1   | Foundation (app scaffold, DB, config, CI, design system)                        | —                                 | ✅     |
 | 2   | Domain model, seed data, demo supplier storefronts                              | —                                 | ✅     |
 | 3   | Guard core: deterministic policy engine                                         | —                                 | ✅     |
-| 4   | PayPal layer + sandbox-faithful simulator                                       | —                                 | ⬜     |
+| 4   | PayPal layer + sandbox-faithful simulator                                       | —                                 | ✅     |
 | 5   | Catalog: Channel3 + demo suppliers + market prices                              | Channel3 key (optional)           | ⬜     |
 | 6   | AI layer: compiler, injection scanner, judge, writers                           | Anthropic key (for live)          | ⬜     |
 | 7   | Ops agent + execution pipeline                                                  | —                                 | ⬜     |
@@ -391,7 +391,7 @@ pass; CI green on the PR.
 **Done when:** table-driven unit tests for every rule, combiner and level (≥ 90% line coverage on `guard/`); the 4 headline
 attacks are rejected by rules alone where they should be (gift cards, payee swap, structuring, duplicate).
 
-### Step 4: PayPal layer + sandbox-faithful simulator
+### Step 4: PayPal layer + sandbox-faithful simulator ✅
 
 **Build**
 
@@ -538,7 +538,15 @@ eligibility math.
 - Pick the hold strategy from the fallback ladder based on what the spike shows; record the result in
   `docs/ARCHITECTURE.md`.
 - Webhook endpoint + signature verification + event processing into the ledger.
-- Run the Step 4 contract suite against the sandbox.
+- Run the Step 4 contract suite (`tests/unit/paypal/contract.ts`) against `SandboxPayPal`, plus
+  `npm run test:sandbox` (OAuth, orders, payouts; runs as soon as keys exist).
+- Open questions only the sandbox can answer (the simulator encodes our best understanding):
+  1. Several partial captures (`final_capture: false`) on one PayPal-wallet authorization
+  2. Error codes for void-after-capture and reauthorize-too-soon (simulator: `PREVIOUSLY_CAPTURED`,
+     `REAUTHORIZE_TOO_SOON`) and whether a partially captured authorization can be reauthorized
+  3. Whether a vault-id order completes immediately with an authorization (merchant-initiated renewal)
+  4. Payout replay semantics for a repeated `PayPal-Request-Id` / `sender_batch_id`
+  5. Whether `invoice_id` uniqueness is enforced on captures for this sandbox account
 
 **Done when:** the full demo story runs on real sandbox money, and the IDs are visible in the sandbox accounts.
 

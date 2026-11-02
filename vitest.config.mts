@@ -7,7 +7,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/unit/**/*.test.ts", "src/**/*.test.ts"],
+    include: ["tests/unit/**/*.test.ts", "tests/sandbox/**/*.test.ts", "src/**/*.test.ts"],
     env: { PGLITE_DIR: "memory://" },
     testTimeout: 20_000,
     coverage: {

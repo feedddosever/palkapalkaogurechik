@@ -486,3 +486,30 @@ export const trustEvents = pgTable(
   },
   (t) => [index("trust_agent_idx").on(t.agentId, t.createdAt)],
 );
+
+// ─── PayPal simulator (offline mode) ────────────────────────────────────────
+
+/**
+ * State of the local PayPal simulator: orders, authorizations, captures, payouts, refunds.
+ * Persisted so offline demos survive restarts. Never used in sandbox mode.
+ */
+export const paypalSimObjects = pgTable(
+  "paypal_sim_objects",
+  {
+    id: text("id").primaryKey(),
+    kind: text("kind", {
+      enum: ["order", "authorization", "capture", "payout", "refund", "vault_token"],
+    }).notNull(),
+    data: jsonb("data").notNull(),
+    createdAt: createdAt(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("sim_kind_idx").on(t.kind, t.createdAt)],
+);
+
+/** Replayed responses keyed by PayPal-Request-Id, mirroring PayPal's idempotency. */
+export const paypalSimIdempotency = pgTable("paypal_sim_idempotency", {
+  key: text("key").primaryKey(),
+  response: jsonb("response").notNull(),
+  createdAt: createdAt(),
+});
