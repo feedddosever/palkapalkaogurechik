@@ -18,7 +18,8 @@
     "format:check": "prettier --check .",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build",
     "db:reset": "tsx scripts/db-reset.ts",
-    "test:sandbox": "vitest run tests/sandbox"
+    "test:sandbox": "vitest run tests/sandbox",
+    "demo:restock": "tsx scripts/demo-restock.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

@@ -149,6 +149,7 @@ export function invoice(
 export function recent(req: GuardRequest, overrides: Partial<RecentRequest> = {}): RecentRequest {
   return {
     id: `req_${Math.random().toString(36).slice(2)}`,
+    kind: req.kind,
     supplierSlug: req.supplierSlug,
     supplierName: req.supplierName,
     amount: req.amount,

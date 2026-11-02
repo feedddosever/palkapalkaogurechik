@@ -259,6 +259,14 @@ describe("patterns over time", () => {
     ).not.toContain("STRUCTURING_SUSPECTED");
   });
 
+  it("a purchase and an invoice from the same supplier are not 'split payments'", () => {
+    const c = ctx({
+      supplier: SUPPLIERS.papergoods,
+      recentRequests: [recent(STORY.cups(), { createdAt: minutesAgo(30) })],
+    });
+    expect(codes(STORY.legitInvoice(), c)).not.toContain("STRUCTURING_SUSPECTED");
+  });
+
   it("duplicates: same key is a retry (no finding); hours later needs approval", () => {
     const req = STORY.espresso();
     expect(

@@ -62,6 +62,7 @@ export type GuardRequest = {
 
 export type RecentRequest = {
   id: string;
+  kind: "purchase" | "invoice";
   supplierSlug?: string;
   supplierName: string;
   amount: string;

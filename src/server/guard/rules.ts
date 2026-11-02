@@ -35,6 +35,7 @@ function finding(
 }
 
 const label = (category: string) => category.replace(/_/g, " ");
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const money = (cents: number) => formatMoney(fromCents(cents));
 
 function sameSupplier(r: RecentRequest, req: GuardRequest): boolean {
@@ -147,7 +148,7 @@ export const categoryRule: Rule = (req, p, ctx) => {
         finding(
           "FORBIDDEN_CATEGORY",
           "BLOCK",
-          `${label(item.category)} are on your never-buy list ("${item.name}"). They are a common way to cash out stolen funds.`,
+          `${capitalize(label(item.category))} are on your never-buy list ("${item.name}"). They are a common way to cash out stolen funds.`,
           { attack: true, data: { category: item.category, item: item.name } },
         ),
       );
@@ -286,13 +287,15 @@ export const payeeRule: Rule = (req, p, ctx) => {
 // ─── Patterns over time ─────────────────────────────────────────────────────
 
 export const structuringRule: Rule = (req, p, ctx) => {
-  if (!p.structuring.enabled) return [];
+  // Splitting is a purchase pattern; invoice amounts are fixed by the supplier's bill.
+  if (!p.structuring.enabled || req.kind !== "purchase") return [];
   const amount = toCents(req.amount);
   const threshold = toCents(p.approvalThreshold);
   if (amount > threshold) return []; // already needs approval on its own
   const since = ctx.now.getTime() - p.structuring.windowHours * HOUR;
   const related = ctx.recentRequests.filter(
     (r) =>
+      r.kind === "purchase" &&
       r.createdAt.getTime() >= since &&
       LIVE_STATUSES.has(r.status) &&
       r.idempotencyKey !== req.idempotencyKey &&

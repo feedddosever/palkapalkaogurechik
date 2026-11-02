@@ -23,7 +23,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 4   | PayPal layer + sandbox-faithful simulator                                       | —                                 | ✅     |
 | 5   | Catalog: Channel3 + demo suppliers + market prices                              | Channel3 key (optional)           | ✅     |
 | 6   | AI layer: compiler, injection scanner, judge, writers                           | Anthropic key (for live)          | ✅     |
-| 7   | Ops agent + execution pipeline                                                  | —                                 | ⬜     |
+| 7   | Ops agent + execution pipeline                                                  | —                                 | ✅     |
 | 8   | Signed intent receipts + public verifier                                        | —                                 | ⬜     |
 | 9   | Product UI: landing, onboarding, control tower, agent console, mobile approvals | —                                 | ⬜     |
 | 10  | Ledger on AG Grid (+ natural-language queries)                                  | AG Grid license (optional)        | ⬜     |
@@ -455,7 +455,7 @@ works as soon as `CHANNEL3_API_KEY` is set.
 **Done when:** each AI function has fixture tests (offline) and a `live` test that runs when the key exists; the seeded
 rules text compiles to the expected policy; both headline attacks get high-risk verdicts from the judge.
 
-### Step 7: Ops agent + execution pipeline
+### Step 7: Ops agent + execution pipeline ✅
 
 **Build**
 
@@ -470,6 +470,11 @@ rules text compiles to the expected policy; both headline attacks get high-risk 
   hijacked: it follows instructions found in tool results). A capable model often ignores the injection on its
   own, so the demo and Attack Lab use `compromised` mode to show the point: **Leash must not depend on the agent
   being smart.** The UI labels this mode clearly.
+
+- **As built:** purchases carry only product ids + quantities (price, category, supplier and payee come from
+  the catalog); invoices are paid from the inbox record; Leash attaches the related pages/emails as sources
+  itself; captures use `invoice_id` = receipt id; a blocked attack demotes one level; the scripted agent
+  covers offline runs and the simulated hijack. Split-payment detection applies to purchases only.
 
 **Done when:** in simulator mode, `npm run demo:restock` produces the expected story deterministically (with fixture AI):
 N allowed, 1 needs approval, 2 attacks blocked, correct ledger rows, retry produces no double capture.

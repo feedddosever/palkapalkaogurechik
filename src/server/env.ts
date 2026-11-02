@@ -31,6 +31,11 @@ const schema = z.object({
   PAYPAL_WEBHOOK_ID: optional,
   /** auto = sandbox when credentials exist, else simulator. */
   PAYPAL_MODE: z.enum(["auto", "sim", "sandbox"]).default("auto"),
+  /**
+   * JSON map from demo supplier payee emails to real sandbox business-account emails, e.g.
+   * {"billing@northside-roasters.example":"sb-abc@business.example.com"}. Sandbox mode only.
+   */
+  PAYPAL_PAYEE_MAP: optional,
 
   // AI (Claude via Anthropic API).
   ANTHROPIC_API_KEY: optional,

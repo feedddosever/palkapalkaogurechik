@@ -17,5 +17,11 @@ export function evaluateRules(req: GuardRequest, policy: Policy, ctx: GuardConte
     }
   }
 
-  return { verdict, results: kept, waived, attack: kept.some((r) => r.attack) };
+  // Most important first: attack signals, then blocks, then approvals (stable within each group).
+  const rank = (r: (typeof kept)[number]) => (r.attack ? 0 : r.verdict === "BLOCK" ? 1 : 2);
+  const results = kept
+    .map((r, i) => ({ r, i }))
+    .sort((a, b) => rank(a.r) - rank(b.r) || a.i - b.i)
+    .map((x) => x.r);
+  return { verdict, results, waived, attack: kept.some((r) => r.attack) };
 }

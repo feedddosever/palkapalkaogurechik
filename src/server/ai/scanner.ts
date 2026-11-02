@@ -184,8 +184,12 @@ export function scannerOutcome(
   const follows = flagged.filter((f) => {
     const text = textOf.get(f.sourceId) ?? "";
     const namesPayee = text.includes(payee);
+    // A product page naming the product it sells is not an instruction; anything else it names is.
+    const ownProduct = f.sourceId.startsWith("listing:") ? f.sourceId.slice("listing:".length) : undefined;
     const namesItem = req.items.some(
-      (i) => (i.productId && text.includes(i.productId.toLowerCase())) || text.includes(i.name.toLowerCase()),
+      (i) =>
+        i.productId !== ownProduct &&
+        ((i.productId && text.includes(i.productId.toLowerCase())) || text.includes(i.name.toLowerCase())),
     );
     const cashOut = req.items.some((i) =>
       ["gift_cards", "prepaid_cards", "crypto", "money_transfer"].includes(i.category),

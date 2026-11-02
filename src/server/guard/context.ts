@@ -140,6 +140,7 @@ export async function buildGuardContext(
     })),
     recentRequests: history.map((r) => ({
       id: r.id,
+      kind: r.kind,
       supplierSlug: r.supplierId ? supplierSlugById.get(r.supplierId) : undefined,
       supplierName: r.supplierName,
       amount: r.amount,
