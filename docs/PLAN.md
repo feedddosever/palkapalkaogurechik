@@ -19,7 +19,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 0   | Plan & repo hygiene                                                             | —                                 | ✅     |
 | 1   | Foundation (app scaffold, DB, config, CI, design system)                        | —                                 | ✅     |
 | 2   | Domain model, seed data, demo supplier storefronts                              | —                                 | ✅     |
-| 3   | Guard core: deterministic policy engine                                         | —                                 | ⬜     |
+| 3   | Guard core: deterministic policy engine                                         | —                                 | ✅     |
 | 4   | PayPal layer + sandbox-faithful simulator                                       | —                                 | ⬜     |
 | 5   | Catalog: Channel3 + demo suppliers + market prices                              | Channel3 key (optional)           | ⬜     |
 | 6   | AI layer: compiler, injection scanner, judge, writers                           | Anthropic key (for live)          | ⬜     |
@@ -106,13 +106,15 @@ back to Dana in PayPal.
 
 ### Autonomy levels ("leash length")
 
-| Level | Name      | What runs without asking                                                     |
-| ----- | --------- | ---------------------------------------------------------------------------- |
-| L0    | Ask       | Nothing. Every payment needs approval.                                       |
-| L1    | Assisted  | Purchases ≤ $25 from known suppliers.                                        |
-| L2    | Budgeted  | Anything within category budgets and the per-item cap, from known suppliers. |
-| L3    | Trusted   | L2, plus new _verified_ suppliers and invoices to _known_ payees.            |
-| L4    | Autopilot | Anything inside the hold that passes all rules; only anomalies escalate.     |
+| Level | Name      | What runs without asking (always within every rule and the hold)                                                     |
+| ----- | --------- | -------------------------------------------------------------------------------------------------------------------- |
+| L0    | Ask       | Nothing. Every payment needs approval.                                                                               |
+| L1    | Assisted  | Repeat purchases (items bought before) from known suppliers, and invoices to known payees, under the approval limit. |
+| L2    | Budgeted  | L1, plus new items in allowed categories within category budgets.                                                    |
+| L3    | Trusted   | L2, plus new _verified_ suppliers and their own checkout.                                                            |
+| L4    | Autopilot | Anything inside the hold that passes every rule, including above the approval limit; only anomalies escalate.        |
+
+A level only ever waives specific _approval_ findings. **No level waives a BLOCK.**
 
 Promotion requires N executed payments, 0 denials and 0 blocks in the window. Leash proposes it with an AI-written
 case ("23 purchases, all approved, 6% below market") and the owner accepts with one tap. Demotion happens
@@ -375,7 +377,7 @@ pass; CI green on the PR.
 
 **Done when:** `npm run db:reset` produces the seeded world; storefront pages render; schema tests pass.
 
-### Step 3: Guard core (deterministic policy engine)
+### Step 3: Guard core (deterministic policy engine) ✅
 
 **Build**
 
