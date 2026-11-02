@@ -95,6 +95,7 @@ async function buildPurchase(input: PurchaseInput): Promise<Omit<Built, "cycleId
     id: `listing:${p.productId}`,
     kind: "listing",
     text: readProductPage(p.productId) ?? "",
+    label: `the ${p.supplierName} listing for "${p.name}"`,
   }));
   const notes: string[] = [];
   for (const { p } of resolved) {
@@ -152,6 +153,7 @@ async function buildInvoice(
         id: `email:${msg.id}`,
         kind: "invoice",
         text: `From: ${msg.fromName} <${msg.fromEmail}>\nSubject: ${msg.subject}\n\n${msg.body}`,
+        label: `the email "${msg.subject}" from ${msg.fromName}`,
       },
     ],
   };
@@ -163,7 +165,7 @@ async function extraSources(db: DB, workspaceId: string, ids: string[] = []): Pr
     const [kind, ref] = id.split(":", 2);
     if (kind === "listing" && ref) {
       const text = readProductPage(ref);
-      if (text) out.push({ id, kind: "listing", text });
+      if (text) out.push({ id, kind: "listing", text, label: `the product page ${ref}` });
     } else if (kind === "email" && ref) {
       const [m] = await db
         .select()
@@ -174,6 +176,7 @@ async function extraSources(db: DB, workspaceId: string, ids: string[] = []): Pr
           id,
           kind: "email",
           text: `From: ${m.fromName} <${m.fromEmail}>\nSubject: ${m.subject}\n\n${m.body}`,
+          label: `the email "${m.subject}" from ${m.fromName}`,
         });
     }
   }

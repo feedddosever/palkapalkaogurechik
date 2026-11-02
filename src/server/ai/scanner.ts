@@ -15,6 +15,8 @@ export type ScanSource = {
   id: string;
   kind: "listing" | "email" | "invoice" | "review" | "other";
   text: string;
+  /** How to name this source to the owner, e.g. the email "Updated payment details" from Northside Roasters. */
+  label?: string;
 };
 
 export type ScanSpan = { text: string; reason: string };
@@ -180,6 +182,7 @@ export function scannerOutcome(
     return { layer: "scanner", verdict: "ALLOW", codes: [], reasons: [] };
   }
   const textOf = new Map(sources.map((s) => [s.id, s.text.toLowerCase()]));
+  const labelOf = (id: string) => sources.find((s) => s.id === id)?.label ?? id;
   const payee = req.payeeEmail.toLowerCase();
   const follows = flagged.filter((f) => {
     const text = textOf.get(f.sourceId) ?? "";
@@ -204,7 +207,7 @@ export function scannerOutcome(
       verdict: "BLOCK",
       codes: ["FOLLOWS_INJECTED_INSTRUCTION"],
       reasons: [
-        `This payment follows instructions planted in ${top.sourceId}${quote ? `: "${quote}"` : ""}.`,
+        `This payment follows instructions planted in ${labelOf(top.sourceId)}${quote ? `: "${quote}"` : ""}.`,
       ],
       attack: true,
     };
@@ -214,7 +217,7 @@ export function scannerOutcome(
     verdict: "NEEDS_APPROVAL",
     codes: ["RELIED_ON_SUSPICIOUS_SOURCE"],
     reasons: [
-      `The agent relied on ${top.sourceId}, which contains suspicious instructions${quote ? `: "${quote}"` : ""}.`,
+      `The agent relied on ${labelOf(top.sourceId)}, which contains suspicious instructions${quote ? `: "${quote}"` : ""}.`,
     ],
   };
 }

@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { executeTool, type ToolContext } from "@/server/agent/tools";
 import { closeDb, getDb } from "@/server/db/client";
 import * as t from "@/server/db/schema";
-import { activateCycle, startCycle } from "@/server/payments/cycles";
+import { activateCycle, closeCycle, getActiveCycle, startCycle } from "@/server/payments/cycles";
 import {
   decideApproval,
   executePayment,
@@ -118,6 +118,27 @@ describe("payment service", () => {
       ok: false,
       error: "Request is denied, not approved",
     });
+  });
+
+  it("ending the week expires approvals that are still pending", async () => {
+    const { db, workspaceId, agentId } = await setup();
+    const r = await submitPaymentRequest(db, {
+      workspaceId,
+      agentId,
+      agentTask: "x",
+      ai: false,
+      paypal: sim,
+      input: buy("oc-barista-6x32", 6),
+    });
+    expect(r.status).toBe("needs_approval");
+    const cycle = await getActiveCycle(db, agentId);
+    await closeCycle(db, cycle!.id, { paypal: sim });
+    const [approval] = await db.select().from(t.approvals).where(eq(t.approvals.id, r.approvalId!));
+    const [request] = await db.select().from(t.paymentRequests).where(eq(t.paymentRequests.id, r.requestId));
+    expect([approval.status, request.status]).toEqual(["expired", "denied"]);
+    expect((await decideApproval(db, r.approvalId!, { decision: "approve" }, { paypal: sim })).status).toBe(
+      "denied",
+    );
   });
 
   it("reports a failed supplier payout after a successful capture", async () => {

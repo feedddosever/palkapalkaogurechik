@@ -12,6 +12,7 @@ type Offer = {
   product_id: string;
   sku: string | null;
   name: string;
+  supplier: string;
   supplier_id: string;
   supplier_verified: boolean;
   price: string;
@@ -52,7 +53,7 @@ export async function runScriptedAgent(c: ToolContext, mode: "standard" | "compr
 
     await think(
       c,
-      `${item.name} is ${item.below_par_by} below par. Looking at ${choice.name} from ${choice.supplier_id} at $${choice.price}.`,
+      `${item.name} is ${item.below_par_by} below par. Looking at ${choice.name} from ${choice.supplier} at $${choice.price}.`,
     );
     const page = parse<{ page_text?: string }>(
       (await executeTool("read_product_page", { product_id: choice.product_id }, c)).content,

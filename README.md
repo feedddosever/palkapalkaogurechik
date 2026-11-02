@@ -25,7 +25,9 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000. To switch integrations to live mode, copy `.env.example` to `.env.local` and fill in the
+Open http://localhost:3000/demo for a fresh, isolated Bean There Café and follow the story: compile the rules,
+approve the weekly PayPal hold (an offline simulator without keys), run the agent, approve on the phone page,
+verify the receipt. `npm run demo:restock` tells the same story in the terminal. To switch integrations to live mode, copy `.env.example` to `.env.local` and fill in the
 keys you have. `/api/health` reports which integrations are live.
 
 | Command                                      | What it does                                    |

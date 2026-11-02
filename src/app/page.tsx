@@ -4,6 +4,7 @@ import { BadgeCheck, Fingerprint, Gauge, ShieldCheck } from "lucide-react";
 import { LeashMeter } from "@/components/leash-meter";
 import { Logo } from "@/components/logo";
 import { Badge } from "@/components/ui/badge";
+import { ButtonLink } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Timeline, TimelineItem } from "@/components/ui/timeline";
@@ -48,6 +49,14 @@ export default function Home() {
               a PayPal-backed budget, rules in plain English, one-tap approvals, and a firewall that stops
               hijacked agents before money moves.
             </p>
+            <div className="flex flex-wrap gap-3">
+              <ButtonLink href="/onboarding" size="lg">
+                Try it with Bean There Café
+              </ButtonLink>
+              <ButtonLink href="/app" size="lg" variant="secondary">
+                Open the control tower
+              </ButtonLink>
+            </div>
             <Suspense fallback={<Skeleton className="h-7 w-80" />}>
               <IntegrationStatus />
             </Suspense>

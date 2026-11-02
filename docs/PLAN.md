@@ -25,7 +25,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 6   | AI layer: compiler, injection scanner, judge, writers                           | Anthropic key (for live)          | ✅     |
 | 7   | Ops agent + execution pipeline                                                  | —                                 | ✅     |
 | 8   | Signed intent receipts + public verifier                                        | —                                 | ✅     |
-| 9   | Product UI: landing, onboarding, control tower, agent console, mobile approvals | —                                 | ⬜     |
+| 9   | Product UI: landing, onboarding, control tower, agent console, mobile approvals | —                                 | ✅     |
 | 10  | Ledger on AG Grid (+ natural-language queries)                                  | AG Grid license (optional)        | ⬜     |
 | 11  | Autonomy levels & trust engine                                                  | —                                 | ⬜     |
 | 12  | Attack Lab                                                                      | —                                 | ⬜     |
@@ -495,7 +495,7 @@ N allowed, 1 needs approval, 2 attacks blocked, correct ledger rows, retry produ
 
 **Done when:** verifying a stored receipt passes; changing one byte fails; page renders on mobile.
 
-### Step 9: Product UI (the design pass)
+### Step 9: Product UI (the design pass) ✅
 
 **Build**
 
@@ -510,6 +510,13 @@ N allowed, 1 needs approval, 2 attacks blocked, correct ledger rows, retry produ
   update rule. A QR code on desktop opens it on the phone; Web Push where supported.
 - **Rules** `/app/rules`: mandate versions, plain-English edits with diff.
 - Every view handles loading, empty and error states; responsive down to 375px; keyboard and contrast checked.
+
+- **As built:** PayPal approval uses the standard redirect flow (order `payer-action` link → return URL with
+  `token`), which works the same for the sandbox and the simulator's own clearly-labelled checkout page.
+  Compiled rules are saved as server-side drafts (never round-tripped through the browser). Agent runs execute
+  in `after()` and stream over SSE. `/demo` (judge mode: fresh isolated workspace per browser) was pulled
+  forward from Step 17 to isolate e2e tests. A Playwright test clicks through the whole story on desktop
+  and mobile. Web Push stays on the cut list (QR + live page instead).
 
 **Done when:** the whole demo story (minus the ledger, trust and lab pages) is clickable end to end in simulator mode on
 desktop and phone widths.

@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -20,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Timeline, TimelineItem } from "@/components/ui/timeline";
 import { VerdictBadge, type Verdict } from "@/components/ui/verdict-badge";
 import { formatMoney } from "@/lib/format";
+import { layerChip, orderLayers } from "@/lib/layers";
 import { getDb } from "@/server/db/client";
 import { env } from "@/server/env";
 import { categoryLabel } from "@/server/guard/rule-card";
@@ -59,8 +61,6 @@ function ReceiptSkeleton() {
   );
 }
 
-const LAYER_ORDER = ["rules", "scanner", "judge"];
-
 const short = (s: string, n = 10) => (s.length > 2 * n + 1 ? `${s.slice(0, n)}…${s.slice(-n)}` : s);
 
 function Mono({ children, title }: { children: string; title?: string }) {
@@ -75,6 +75,7 @@ function Mono({ children, title }: { children: string; title?: string }) {
 }
 
 async function Receipt({ params }: { params: PageProps<"/verify/[id]">["params"] }) {
+  await connection();
   const { id } = await params;
   const db = await getDb();
   const { receipt, valid, checks } = await verifyReceipt(db, id);
@@ -207,16 +208,14 @@ async function Receipt({ params }: { params: PageProps<"/verify/[id]">["params"]
                 ) : (
                   <VerdictBadge verdict={p.decision.verdict as Verdict} />
                 )}
-                {[...p.decision.layers]
-                  .sort((a, b) => LAYER_ORDER.indexOf(a.layer) - LAYER_ORDER.indexOf(b.layer))
-                  .map((l) => (
-                    <Badge
-                      key={l.layer}
-                      tone={l.verdict === "ALLOW" ? "allow" : l.verdict === "BLOCK" ? "block" : "review"}
-                    >
-                      {l.layer}: {l.verdict.toLowerCase().replace("_", " ")}
+                {orderLayers(p.decision.layers).map((l) => {
+                  const chip = layerChip(l);
+                  return (
+                    <Badge key={l.layer} tone={chip.tone}>
+                      {chip.label}
                     </Badge>
-                  ))}
+                  );
+                })}
               </div>
               <p className="mt-2">
                 Agent autonomy level L{p.decision.autonomyLevel}.{" "}

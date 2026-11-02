@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { newId } from "@/lib/ids";
 import { fromCents, normalizeAmount, toCents } from "@/lib/money";
 import type { DB } from "@/server/db/client";
@@ -150,6 +150,19 @@ export async function closeCycle(db: DB, cycleId: string, { paypal = getPayPal()
       () => paypal.voidAuthorization(cycle.paypalAuthorizationId!, { requestId: `void-${cycleId}` }),
       (a) => ({ paypalId: a.authorizationId, status: a.status, debugId: a.debugId }),
     );
+  }
+  // Anything still waiting for the owner can no longer be paid from this hold.
+  const waiting = await db
+    .select({ id: t.paymentRequests.id })
+    .from(t.paymentRequests)
+    .where(and(eq(t.paymentRequests.cycleId, cycleId), eq(t.paymentRequests.status, "needs_approval")));
+  if (waiting.length) {
+    const ids = waiting.map((w) => w.id);
+    await db
+      .update(t.approvals)
+      .set({ status: "expired", decidedAt: new Date() })
+      .where(inArray(t.approvals.requestId, ids));
+    await db.update(t.paymentRequests).set({ status: "denied" }).where(inArray(t.paymentRequests.id, ids));
   }
   const [updated] = await db
     .update(t.cycles)

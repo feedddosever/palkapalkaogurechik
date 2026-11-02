@@ -134,6 +134,12 @@ export class SimulatedPayPal implements PayPalGateway {
     return this.toHoldOrder(approved);
   }
 
+  /** Amount and description of a simulated order (for the simulator's checkout page). */
+  async orderDetails(orderId: string): Promise<{ amount: string; description: string; vault: boolean }> {
+    const o = await this.load<SimOrder>(orderId, "order");
+    return { amount: o.amount, description: o.description, vault: o.vault };
+  }
+
   async simCancel(orderId: string) {
     const order = await this.load<SimOrder>(orderId, "order");
     if (order.status === "COMPLETED") return this.toHoldOrder(order);
@@ -528,7 +534,7 @@ export class SimulatedPayPal implements PayPalGateway {
       status: o.status,
       approveUrl:
         o.status === "PAYER_ACTION_REQUIRED" || o.status === "CREATED"
-          ? `${this.opts.appUrl}/sim/paypal/checkout?token=${encodeURIComponent(o.id)}`
+          ? `/sim/paypal/checkout?token=${encodeURIComponent(o.id)}`
           : undefined,
       payerEmail: o.payer?.email,
     };
