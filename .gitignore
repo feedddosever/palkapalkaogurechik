@@ -1,0 +1,36 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# local data (PGlite, bench outputs, recordings)
+.data/
+bench/results/*.local.*
+test-results/
+playwright-report/
+recordings/
+
+# env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# misc
+.DS_Store
+*.log
+npm-debug.log*
+.vercel
+.idea/
+.vscode/*
+!.vscode/extensions.json
+coverage/
