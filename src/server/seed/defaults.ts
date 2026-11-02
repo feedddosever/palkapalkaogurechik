@@ -13,10 +13,11 @@ export const DEFAULT_POLICY: Policy = {
   cycle: { amount: 500, currency: "USD", period: "weekly" },
   approvalThreshold: 120,
   categories: [
-    { name: "coffee", budget: 250 },
-    { name: "dairy_alt", budget: 200 },
-    { name: "packaging", budget: 200 },
-    { name: "cleaning", budget: 100 },
+    // Dana's words set no per-category budgets, so a faithful compile adds none.
+    { name: "coffee" },
+    { name: "dairy_alt" },
+    { name: "packaging" },
+    { name: "cleaning" },
   ],
   suppliers: {
     allow: ["northside-roasters", "oat-and-co", "papergoods"],

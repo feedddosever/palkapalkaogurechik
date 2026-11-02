@@ -144,13 +144,15 @@ describe("categories", () => {
   });
 
   it("enforces category budgets using spend so far this cycle", () => {
+    const p = policy({ categories: [{ name: "coffee", budget: 250 }] });
     expectVerdict(
       STORY.espresso(),
       "NEEDS_APPROVAL",
       ["CATEGORY_BUDGET_EXCEEDED"],
       ctx({ spentByCategory: { coffee: "200.00" } }),
+      p,
     );
-    expect(codes(STORY.espresso(), ctx({ spentByCategory: { coffee: "166.00" } }))).not.toContain(
+    expect(codes(STORY.espresso(), ctx({ spentByCategory: { coffee: "166.00" } }), p)).not.toContain(
       "CATEGORY_BUDGET_EXCEEDED",
     );
   });

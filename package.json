@@ -21,6 +21,7 @@
     "test:sandbox": "vitest run tests/sandbox"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0",
     "@electric-sql/pglite": "^0.5.14",
     "@paypal/paypal-server-sdk": "^2.5.0",
     "clsx": "^2.1.1",

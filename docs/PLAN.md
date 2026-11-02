@@ -22,7 +22,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 3   | Guard core: deterministic policy engine                                         | —                                 | ✅     |
 | 4   | PayPal layer + sandbox-faithful simulator                                       | —                                 | ✅     |
 | 5   | Catalog: Channel3 + demo suppliers + market prices                              | Channel3 key (optional)           | ✅     |
-| 6   | AI layer: compiler, injection scanner, judge, writers                           | Anthropic key (for live)          | ⬜     |
+| 6   | AI layer: compiler, injection scanner, judge, writers                           | Anthropic key (for live)          | ✅     |
 | 7   | Ops agent + execution pipeline                                                  | —                                 | ⬜     |
 | 8   | Signed intent receipts + public verifier                                        | —                                 | ⬜     |
 | 9   | Product UI: landing, onboarding, control tower, agent console, mobile approvals | —                                 | ⬜     |
@@ -425,7 +425,7 @@ requestId, invoiceId, note})`, `void`, `reauthorize`, `refund`, `createPayout`, 
 **Done when:** offline search returns merged offers for every inventory item; market price computed; switching to live
 works as soon as `CHANNEL3_API_KEY` is set.
 
-### Step 6: AI layer
+### Step 6: AI layer ✅
 
 **Build** (load the Claude API reference before writing this code)
 
@@ -441,6 +441,16 @@ works as soon as `CHANNEL3_API_KEY` is set.
 - **Ledger query:** natural language → AG Grid state (filters/grouping/sort) via the grid's structured schema (used in
   Step 10).
 - Offline fallbacks: heuristic scanner, rules-only judge (labelled), canned compiler output for the seeded rules text.
+- **As built:**
+  - Models resolve at runtime to the newest Opus (smart tier) and newest Haiku (fast tier) via the Models
+    API; `AI_MODEL_SMART` / `AI_MODEL_FAST` pin them. Smart-tier calls enable server-side refusal fallback.
+  - The Rule Card is rendered from the compiled policy (deterministic), so it shows exactly what is enforced.
+  - Safety floors applied in code after compiling: high-risk categories always forbidden, unknown suppliers
+    dropped, approval limit ≤ budget.
+  - The judge **fails closed**: if AI is configured but the judge errors, the payment needs approval.
+  - Untrusted text is wrapped in `<untrusted_content>` blocks with closing tags neutralized.
+  - `runGuard()` pipeline with per-layer switches (used by LeashBench ablations).
+  - Natural-language ledger queries move to Step 10, next to the grid they drive.
 
 **Done when:** each AI function has fixture tests (offline) and a `live` test that runs when the key exists; the seeded
 rules text compiles to the expected policy; both headline attacks get high-risk verdicts from the judge.
