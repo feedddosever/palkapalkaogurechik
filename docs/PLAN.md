@@ -21,7 +21,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 2   | Domain model, seed data, demo supplier storefronts                              | —                                 | ✅     |
 | 3   | Guard core: deterministic policy engine                                         | —                                 | ✅     |
 | 4   | PayPal layer + sandbox-faithful simulator                                       | —                                 | ✅     |
-| 5   | Catalog: Channel3 + demo suppliers + market prices                              | Channel3 key (optional)           | ⬜     |
+| 5   | Catalog: Channel3 + demo suppliers + market prices                              | Channel3 key (optional)           | ✅     |
 | 6   | AI layer: compiler, injection scanner, judge, writers                           | Anthropic key (for live)          | ⬜     |
 | 7   | Ops agent + execution pipeline                                                  | —                                 | ⬜     |
 | 8   | Signed intent receipts + public verifier                                        | —                                 | ⬜     |
@@ -407,7 +407,7 @@ requestId, invoiceId, note})`, `void`, `reauthorize`, `refund`, `createPayout`, 
 
 **Done when:** contract suite green on the simulator; sandbox run is ready and only waits for keys (Step 13).
 
-### Step 5: Catalog: Channel3 + demo suppliers + market prices
+### Step 5: Catalog: Channel3 + demo suppliers + market prices ✅
 
 **Build**
 
@@ -417,6 +417,10 @@ requestId, invoiceId, note})`, `void`, `reauthorize`, `refund`, `createPayout`, 
   `untrustedText`, source ref).
 - `marketPrice(itemType)`: median / p25 across Channel3 offers, used by price-sanity checks and the savings figure.
 - Category normalization to Leash categories (feeds the forbidden-category rule deterministically).
+- **Leash never trusts the agent's description of a purchase.** `resolveProduct()` supplies category,
+  price, supplier and payee from the catalog, so a hijacked agent can't relabel gift cards as "coffee".
+- Price signals: below market / fair / above market / **suspiciously cheap** (≥25% under median; an
+  input for the AI judge, e.g. BulkBarn's $17.90 oat milk vs a $25.25 median).
 
 **Done when:** offline search returns merged offers for every inventory item; market price computed; switching to live
 works as soon as `CHANNEL3_API_KEY` is set.

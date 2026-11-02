@@ -79,7 +79,7 @@ describe("guard context from the database", () => {
     expect(c.purchasedBefore.has("BEANS-ESP")).toBe(true);
     expect(c.purchasedBefore.has("ns-decaf-2lb")).toBe(false);
     expect(c.usualQty["OAT-BARISTA"]).toBe(4);
-    expect(c.marketPrice["BEANS-ESP"]).toBe("42.00");
+    expect(c.marketPrice["BEANS-ESP"]).toBe("44.70"); // Channel3 median for a 5 lb bag
   });
 
   it("finds the supplier by name when the agent gives no slug", async () => {

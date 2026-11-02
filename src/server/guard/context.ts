@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, isNotNull } from "drizzle-orm";
 import { fromCents, multiplyAmount, sumAmounts, toCents } from "@/lib/money";
 import { DEMO_SUPPLIERS, getDemoProduct } from "@/server/catalog/demo-suppliers";
+import { channel3MarketPrice } from "@/server/catalog";
 import type { DB } from "@/server/db/client";
 import * as t from "@/server/db/schema";
 import { normalizeName } from "./payee-match";
@@ -14,8 +15,8 @@ const SPENT = new Set(["approved", "executing", "executed"]);
 export type MarketPriceProvider = (items: GuardRequest["items"]) => Promise<Record<string, string>>;
 
 /**
- * Offline market price: median price of the same SKU across every demo supplier.
- * Replaced by Channel3 market data in live mode (Step 5).
+ * Simple market price: median price of the same SKU across the demo suppliers (no Channel3).
+ * The default provider is Channel3 (`channel3MarketPrice`), live or from fixtures.
  */
 export const catalogMarketPrice: MarketPriceProvider = async (items) => {
   const out: Record<string, string> = {};
@@ -42,7 +43,7 @@ export async function buildGuardContext(
     agentId,
     request,
     now = new Date(),
-    marketPrice = catalogMarketPrice,
+    marketPrice = channel3MarketPrice,
   }: {
     workspaceId: string;
     agentId: string;
