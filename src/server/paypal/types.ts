@@ -77,6 +77,8 @@ export type TransactionSummary = {
   amount: Money;
   at: string;
   invoiceId?: string;
+  /** Related PayPal id: the payout batch for a payout item, the authorization for a capture. */
+  refId?: string;
 };
 
 export type CreateHoldOrderInput = {

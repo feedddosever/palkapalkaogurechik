@@ -20,6 +20,7 @@
     "db:reset": "tsx scripts/db-reset.ts",
     "test:sandbox": "vitest run tests/sandbox",
     "demo:restock": "tsx scripts/demo-restock.ts",
+    "jobs:cycles": "tsx scripts/cycle-jobs.ts",
     "keys:generate": "tsx scripts/keys-generate.ts"
   },
   "dependencies": {

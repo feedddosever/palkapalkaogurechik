@@ -49,10 +49,20 @@ test("rules → PayPal hold → agent run → phone approval → receipt → end
   await page.getByRole("link", { name: "Signed receipt" }).click();
   await expect(page.getByRole("heading", { name: "Verified" })).toBeVisible();
 
-  // 6. End the week: the rest of the hold is released.
+  // 6. End the week: the rest of the hold is released, and next week's hold is placed from the
+  //    saved PayPal with no one present.
   await page.goto("/app");
-  await page.getByRole("button", { name: /End week & release \$90\.60/ }).click();
-  await expect(page.getByText("No budget this week").filter({ visible: true })).toBeVisible();
+  await page.getByRole("button", { name: /End week now: release \$90\.60/ }).click();
+  const lastWeek = page.getByRole("status", { name: "Last week" });
+  await expect(lastWeek).toContainText("$409.40 spent, $90.60 released back to your PayPal");
+  await expect(lastWeek).toContainText("placed automatically from your saved PayPal");
+  await expect(page.getByRole("button", { name: /End week now: release \$500\.00/ })).toBeVisible();
+
+  // 7. Every capture and payout matches PayPal's own records.
+  await page.goto("/app/ledger");
+  await expect(page.getByRole("region", { name: "Reconciliation with PayPal" })).toContainText(
+    /Reconciled with PayPal: (\d+) of \1 payments match, 0 issues/,
+  );
 });
 
 test("rules page shows the rules in force and their history", async ({ page }) => {

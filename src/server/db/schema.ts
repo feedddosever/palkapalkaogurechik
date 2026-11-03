@@ -134,6 +134,10 @@ export const cycles = pgTable(
     startsAt: ts("starts_at").notNull(),
     endsAt: ts("ends_at").notNull(),
     closedAt: ts("closed_at"),
+    /** When the hold was reauthorized after PayPal's 3-day honor period (once per authorization). */
+    reauthorizedAt: ts("reauthorized_at"),
+    /** Set when this hold was placed automatically from the previous cycle's vaulted PayPal. */
+    previousCycleId: text("previous_cycle_id"),
     createdAt: createdAt(),
   },
   (t) => [index("cycles_agent_idx").on(t.agentId, t.status)],
@@ -513,6 +517,38 @@ export const paypalSimIdempotency = pgTable("paypal_sim_idempotency", {
   response: jsonb("response").notNull(),
   createdAt: createdAt(),
 });
+
+// ─── Reconciliation ─────────────────────────────────────────────────────────
+
+export type ReconciliationIssue = {
+  kind: "missing_in_paypal" | "amount_mismatch" | "unknown_in_paypal";
+  op?: string;
+  paypalId: string;
+  ours?: string;
+  paypal?: string;
+  note: string;
+};
+
+/** One comparison of Leash's PayPal operations with PayPal's own Transaction Search. */
+export const reconciliations = pgTable(
+  "reconciliations",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    mode: text("mode", { enum: ["sandbox", "sim"] }).notNull(),
+    rangeStart: ts("range_start").notNull(),
+    rangeEnd: ts("range_end").notNull(),
+    checked: integer("checked").notNull(),
+    matched: integer("matched").notNull(),
+    /** Recent operations PayPal's search hasn't indexed yet (it can lag by a few hours). */
+    pending: integer("pending").notNull(),
+    issues: jsonb("issues").$type<ReconciliationIssue[]>().notNull().default([]),
+    createdAt: createdAt(),
+  },
+  (t) => [index("recon_ws_idx").on(t.workspaceId, t.createdAt)],
+);
 
 // ─── Attack Lab ─────────────────────────────────────────────────────────────
 

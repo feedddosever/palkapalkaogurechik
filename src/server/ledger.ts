@@ -3,6 +3,7 @@ import { multiplyAmount, toCents } from "@/lib/money";
 import { marketQuoteFor } from "@/server/catalog";
 import { getDb } from "@/server/db/client";
 import * as t from "@/server/db/schema";
+import { isSeededCycle } from "@/server/seed/seed";
 
 /**
  * The ledger: every PayPal hold and every payment the agent asked for, one row each,
@@ -13,7 +14,7 @@ export type LedgerRow = {
   date: string;
   /** ISO date of the Monday starting that week (sortable; formatted in the grid). */
   week: string;
-  event: "Purchase" | "Invoice" | "PayPal hold" | "Hold released";
+  event: "Purchase" | "Invoice" | "PayPal hold" | "Hold reauthorized" | "Hold released";
   supplier: string;
   category: string;
   description: string;
@@ -155,6 +156,21 @@ export async function ledgerRows(workspaceId: string): Promise<LedgerRow[]> {
     });
   }
 
+  const reauths = cycles.length
+    ? await db
+        .select()
+        .from(t.paypalOperations)
+        .where(
+          and(
+            inArray(
+              t.paypalOperations.cycleId,
+              cycles.map((c) => c.id),
+            ),
+            eq(t.paypalOperations.op, "reauthorize"),
+          ),
+        )
+    : [];
+
   for (const c of cycles) {
     const base = {
       supplier: "PayPal",
@@ -170,7 +186,7 @@ export async function ledgerRows(workspaceId: string): Promise<LedgerRow[]> {
       captureId: null,
       payoutBatchId: null,
       runId: null,
-      historical: c.paypalAuthorizationId?.startsWith("SIM-AUTH-H") ?? false,
+      historical: isSeededCycle(c),
     };
     const placed = c.authorizedAt ?? c.startsAt;
     rows.push({
@@ -182,8 +198,24 @@ export async function ledgerRows(workspaceId: string): Promise<LedgerRow[]> {
       description: `Weekly allowance held in PayPal (${c.paypalAuthorizationId ?? "pending"})`,
       amount: Number(c.amount),
       status: "Held",
-      reason: "Approved by the owner in PayPal",
+      reason: c.previousCycleId
+        ? "Renewed automatically from the owner's saved PayPal (no one present)"
+        : "Approved by the owner in PayPal",
     });
+    const reauth = reauths.find((o) => o.cycleId === c.id && o.status !== "ERROR");
+    if (c.reauthorizedAt && reauth) {
+      rows.push({
+        ...base,
+        id: `${c.id}-reauth`,
+        date: c.reauthorizedAt.toISOString(),
+        week: weekStart(c.reauthorizedAt),
+        event: "Hold reauthorized",
+        description: `Hold refreshed after PayPal's 3-day honor period (${c.paypalAuthorizationId})`,
+        amount: Number(reauth.amount ?? 0),
+        status: "Held",
+        reason: "Keeps the remaining budget guaranteed by PayPal",
+      });
+    }
     if (c.status === "closed" && c.closedAt) {
       rows.push({
         ...base,

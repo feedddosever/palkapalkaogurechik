@@ -8,6 +8,7 @@ import { PolicySchema } from "@/server/guard/policy";
 import { ruleCardFromPolicy, type RuleCard } from "@/server/guard/rule-card";
 import type { AutonomyLevel } from "@/server/guard/types";
 import { DEMO_SUPPLIERS } from "@/server/catalog/demo-suppliers";
+import { isSeededCycle } from "@/server/seed/seed";
 import { openProposal } from "@/server/trust/engine";
 import { DEFAULT_WORKSPACE_ID, ensureDefaultWorkspace } from "@/server/workspace";
 
@@ -165,6 +166,19 @@ export async function dashboard(workspaceId: string) {
     .where(eq(t.trustEvents.agentId, agent.id))
     .orderBy(desc(t.trustEvents.createdAt))
     .limit(1);
+  // The week that just ended (shown for a few days after it closes).
+  const [lastClosed] = await db
+    .select()
+    .from(t.cycles)
+    .where(and(eq(t.cycles.agentId, agent.id), eq(t.cycles.status, "closed")))
+    .orderBy(desc(t.cycles.closedAt))
+    .limit(1);
+  const recentlyClosed =
+    lastClosed?.closedAt &&
+    !isSeededCycle(lastClosed) &&
+    Date.now() - lastClosed.closedAt.getTime() < 3 * 24 * 60 * 60 * 1000
+      ? { ...lastClosed, renewedByVault: cycle?.previousCycleId === lastClosed.id }
+      : null;
 
   return {
     business,
@@ -190,6 +204,7 @@ export async function dashboard(workspaceId: string) {
     rules,
     lastTrust: lastTrust ?? null,
     proposal: await openProposal(db, agent.id),
+    lastClosed: recentlyClosed,
   };
 }
 

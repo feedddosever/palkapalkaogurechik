@@ -445,6 +445,7 @@ export class SimulatedPayPal implements PayPalGateway {
           amount: c.amount,
           at: c.createdAt,
           invoiceId: c.invoiceId,
+          refId: c.authorizationId,
         });
       } else if (row.kind === "payout") {
         const p = row.data as SimPayout;
@@ -455,6 +456,7 @@ export class SimulatedPayPal implements PayPalGateway {
             status: i.status ?? p.status,
             amount: { ...i.amount, value: `-${i.amount.value}` },
             at: p.createdAt,
+            refId: p.batchId,
           });
         }
       } else if (row.kind === "refund") {

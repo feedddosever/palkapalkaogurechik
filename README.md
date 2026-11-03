@@ -36,13 +36,14 @@ or your own phishing email or planted page text, each in a fresh sandbox café w
 kill switch (`LAB_MODE`), a daily AI budget (`LAB_DAILY_BUDGET_USD`) and per-visitor rate limits keep it safe to
 leave open.
 
-| Command                                      | What it does                                    |
-| -------------------------------------------- | ----------------------------------------------- |
-| `npm run dev`                                | Start the dev server                            |
-| `npm test`                                   | Unit tests (Vitest)                             |
-| `npm run test:e2e`                           | End-to-end tests (Playwright, desktop + mobile) |
-| `npm run typecheck` / `npm run lint`         | Static checks                                   |
-| `npm run db:generate` / `npm run db:migrate` | Create / apply database migrations              |
+| Command                                      | What it does                                       |
+| -------------------------------------------- | -------------------------------------------------- |
+| `npm run dev`                                | Start the dev server                               |
+| `npm test`                                   | Unit tests (Vitest)                                |
+| `npm run test:e2e`                           | End-to-end tests (Playwright, desktop + mobile)    |
+| `npm run typecheck` / `npm run lint`         | Static checks                                      |
+| `npm run db:generate` / `npm run db:migrate` | Create / apply database migrations                 |
+| `npm run jobs:cycles`                        | Allowance scheduler: reauthorize, renew, reconcile |
 
 ## License
 

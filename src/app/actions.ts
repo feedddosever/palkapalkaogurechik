@@ -11,7 +11,8 @@ import { getDb } from "@/server/db/client";
 import * as t from "@/server/db/schema";
 import { policyHash, PolicySchema } from "@/server/guard/policy";
 import { diffPolicies, type RuleCard } from "@/server/guard/rule-card";
-import { closeCycle, getActiveCycle, startCycle } from "@/server/payments/cycles";
+import { getActiveCycle, startCycle } from "@/server/payments/cycles";
+import { reconcileWorkspace, renewCycle } from "@/server/payments/jobs";
 import { decideApproval } from "@/server/payments/service";
 import { getPayPal, SimulatedPayPal } from "@/server/paypal";
 import { currentWorkspaceId, nextMandateVersion, workspaceBasics } from "@/server/views";
@@ -185,13 +186,27 @@ export async function decideApprovalAction(formData: FormData): Promise<void> {
   refresh();
 }
 
-/** Ends the week: voids whatever is left of the PayPal hold. */
+/**
+ * "End week now": the same code the scheduler runs at the end of a period. Voids what's left of
+ * the hold and places next week's hold from the owner's saved PayPal (or asks for approval).
+ */
 export async function endWeekAction(): Promise<void> {
   const db = await getDb();
   const workspaceId = await currentWorkspaceId();
   const { agent } = await workspaceBasics(db, workspaceId);
   const cycle = await getActiveCycle(db, agent.id);
-  if (cycle) await closeCycle(db, cycle.id);
+  if (cycle) {
+    const out = await renewCycle(db, cycle.id);
+    await reconcileWorkspace(db, workspaceId).catch(() => null);
+    if (out.how === "owner" && out.approveUrl) redirect(out.approveUrl);
+  }
+  refresh();
+}
+
+/** Compares Leash's PayPal records with PayPal's Transaction Search, on demand. */
+export async function reconcileAction(): Promise<void> {
+  const db = await getDb();
+  await reconcileWorkspace(db, await currentWorkspaceId());
   refresh();
 }
 

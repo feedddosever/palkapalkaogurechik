@@ -30,7 +30,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 11  | Autonomy levels & trust engine                                                  | —                                 | ✅     |
 | 12  | Attack Lab                                                                      | —                                 | ✅     |
 | 13  | Go live on PayPal sandbox (**key gate**)                                        | PayPal sandbox app                | ⬜     |
-| 14  | Allowance cycle jobs (void, reauthorize, renew, reconcile)                      | —                                 | ⬜     |
+| 14  | Allowance cycle jobs (void, reauthorize, renew, reconcile)                      | —                                 | ✅     |
 | 15  | LeashBench (measured security results)                                          | Anthropic key                     | ⬜     |
 | 16  | Bring-your-own-agent: Leash MCP server + Agent Toolkit guard                    | —                                 | ⬜     |
 | 17  | Judge mode + deploy to Render                                                   | Render account                    | ⬜     |
@@ -597,6 +597,8 @@ eligibility math.
 - Pick the hold strategy from the fallback ladder based on what the spike shows; record the result in
   `docs/ARCHITECTURE.md`.
 - Webhook endpoint + signature verification + event processing into the ledger.
+- Re-run Step 14 on the sandbox: reauthorize after the honor period, vault renewal with no one present, and a
+  reconciliation with 0 mismatches after a demo run (check how Transaction Search reports `paypal_reference_id`).
 - Run the Step 4 contract suite (`tests/unit/paypal/contract.ts`) against `SandboxPayPal`, plus
   `npm run test:sandbox` (OAuth, orders, payouts; runs as soon as keys exist).
 - Open questions only the sandbox can answer (the simulator encodes our best understanding):
@@ -609,7 +611,7 @@ eligibility math.
 
 **Done when:** the full demo story runs on real sandbox money, and the IDs are visible in the sandbox accounts.
 
-### Step 14: Allowance cycle jobs
+### Step 14: Allowance cycle jobs ✅
 
 **Build**
 
@@ -618,6 +620,19 @@ eligibility math.
 - Render cron entry; **"End week now"** button in judge mode runs the same code.
 
 **Done when:** a cycle can be closed and renewed on the sandbox; reconciliation reports 0 mismatches after a demo run.
+
+- **As built (simulator; the sandbox run is part of Step 13):** `src/server/payments/jobs.ts`.
+  `reauthorizeIfDue` refreshes the unspent amount once, after the 3-day honor period (skipped near the period end;
+  a PayPal refusal is recorded and the original authorization keeps working). `renewCycle` voids the rest and places
+  the next hold merchant-initiated from the vaulted PayPal at the current rules' amount (idempotent; falls back to
+  owner approval without a vault or when the vault fails). `reconcileWorkspace` matches every capture, payout and
+  refund against Transaction Search (payout items by batch id), counts operations younger than PayPal's indexing
+  lag as pending (3 h on the sandbox), and flags missing, mismatched, and unknown captures from the workspace's own
+  holds. `runCycleJobs` is the scheduler pass: renews ended demo cycles that were used, closes idle ones, skips lab
+  and bench sandboxes, reauthorizes, then reconciles with one Transaction Search call. Entry points:
+  `npm run jobs:cycles` (Render cron) and `POST /api/cron/cycles` (Bearer `CRON_SECRET`). "End week now" in the
+  control tower runs `renewCycle` + reconciliation; the tower shows last week's summary and the hold's guarantee
+  window; the ledger shows renewals, reauthorizations, and a reconciliation card with "Reconcile now".
 
 ### Step 15: LeashBench
 

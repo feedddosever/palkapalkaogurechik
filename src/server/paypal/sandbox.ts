@@ -331,6 +331,7 @@ export class SandboxPayPal implements PayPalGateway {
           },
           at: t.transactionInitiationDate ?? "",
           invoiceId: t.invoiceId,
+          refId: t.paypalReferenceId,
         },
       ];
     });

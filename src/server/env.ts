@@ -51,6 +51,9 @@ const schema = z.object({
   // Ed25519 private key (PKCS#8, base64) for intent receipts. Generated in dev if absent.
   RECEIPT_SIGNING_KEY: optional,
 
+  /** Bearer token for POST /api/cron/cycles (unset = the endpoint is disabled). */
+  CRON_SECRET: optional,
+
   // Attack Lab (public): on = normal; offline = never call Claude from the lab; off = kill switch.
   LAB_MODE: z.enum(["on", "offline", "off"]).default("on"),
   /** Daily cap on estimated Claude spend from lab runs; above it the lab runs offline. */

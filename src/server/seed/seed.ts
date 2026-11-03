@@ -16,6 +16,11 @@ import {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** Seeded (historical) holds never existed in PayPal; their ids carry this prefix. */
+export const SEEDED_AUTH_PREFIX = "SIM-AUTH-H";
+export const isSeededCycle = (c: { paypalAuthorizationId: string | null }) =>
+  c.paypalAuthorizationId?.startsWith(SEEDED_AUTH_PREFIX) ?? false;
+
 /** Suppliers the café has bought from before (their payees are verified). */
 const KNOWN_SUPPLIERS = new Set(["northside-roasters", "oat-and-co", "papergoods"]);
 
@@ -160,7 +165,7 @@ export async function seedWorkspace(
         amount: "500.00",
         status: "closed",
         paypalOrderId: `SIM-ORDER-H${w}`,
-        paypalAuthorizationId: `SIM-AUTH-H${w}`,
+        paypalAuthorizationId: `${SEEDED_AUTH_PREFIX}${w}`,
         capturedTotal: captured,
         releasedTotal: fromCents(toCents("500.00") - toCents(captured)),
         authorizedAt: startsAt,

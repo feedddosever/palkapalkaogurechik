@@ -113,13 +113,36 @@ async function Tower() {
             </p>
             {d.cycle?.status === "active" ? (
               <div className="border-border flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-                <span className="text-muted text-xs">
-                  PayPal authorization <code className="font-mono">{d.cycle.paypalAuthorizationId}</code>
-                  {features.paypalLive ? " (sandbox)" : " (simulator)"}
+                <span className="text-muted flex flex-col gap-0.5 text-xs">
+                  <span>
+                    PayPal authorization <code className="font-mono">{d.cycle.paypalAuthorizationId}</code>
+                    {features.paypalLive ? " (sandbox)" : " (simulator)"}
+                  </span>
+                  {d.cycle.honorUntil ? (
+                    <span>
+                      {d.cycle.reauthorizedAt ? "Reauthorized; funds" : "Funds"} guaranteed by PayPal until{" "}
+                      {d.cycle.honorUntil.toLocaleString("en-US", {
+                        weekday: "short",
+                        hour: "numeric",
+                        minute: "2-digit",
+                        timeZone: "UTC",
+                      })}{" "}
+                      UTC
+                    </span>
+                  ) : null}
                 </span>
                 <form action={endWeekAction}>
-                  <Button type="submit" variant="ghost" size="sm">
-                    <CalendarCheck aria-hidden /> End week & release {formatMoney(d.cycle.remaining)}
+                  <Button
+                    type="submit"
+                    variant="ghost"
+                    size="sm"
+                    title={
+                      d.cycle.paypalVaultId
+                        ? "Voids what's left and places next week's hold from your saved PayPal"
+                        : "Voids what's left of the hold"
+                    }
+                  >
+                    <CalendarCheck aria-hidden /> End week now: release {formatMoney(d.cycle.remaining)}
                   </Button>
                 </form>
               </div>
@@ -158,6 +181,25 @@ async function Tower() {
           </CardContent>
         </Card>
       </div>
+
+      {d.lastClosed ? (
+        <Card role="status" aria-label="Last week">
+          <CardContent className="flex items-start gap-3 pt-5">
+            <CalendarCheck className="text-allow mt-0.5 size-5 shrink-0" aria-hidden />
+            <div className="flex flex-col gap-0.5">
+              <p className="font-medium">
+                Last week closed: {formatMoney(d.lastClosed.capturedTotal)} spent,{" "}
+                {formatMoney(d.lastClosed.releasedTotal)} released back to your PayPal.
+              </p>
+              <p className="text-muted text-sm">
+                {d.lastClosed.renewedByVault && d.cycle
+                  ? `This week's ${formatMoney(d.cycle.amount)} hold was placed automatically from your saved PayPal. No approval needed.`
+                  : "The unused part of the hold was voided in PayPal, so it never left your account."}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {d.proposal ? (
         <Card className="border-primary/40">
