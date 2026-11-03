@@ -27,7 +27,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 8   | Signed intent receipts + public verifier                                        | —                                 | ✅     |
 | 9   | Product UI: landing, onboarding, control tower, agent console, mobile approvals | —                                 | ✅     |
 | 10  | Ledger on AG Grid (+ natural-language queries)                                  | AG Grid license (optional)        | ✅     |
-| 11  | Autonomy levels & trust engine                                                  | —                                 | ⬜     |
+| 11  | Autonomy levels & trust engine                                                  | —                                 | ✅     |
 | 12  | Attack Lab                                                                      | —                                 | ⬜     |
 | 13  | Go live on PayPal sandbox (**key gate**)                                        | PayPal sandbox app                | ⬜     |
 | 14  | Allowance cycle jobs (void, reauthorize, renew, reconcile)                      | —                                 | ⬜     |
@@ -542,7 +542,7 @@ desktop and phone widths.
 **Done when:** 3 scripted NL queries produce the right grid state; works with the trial watermark; license key picked up
 from env if provided.
 
-### Step 11: Autonomy levels & trust engine
+### Step 11: Autonomy levels & trust engine ✅
 
 **Build**
 
@@ -552,6 +552,13 @@ from env if provided.
 
 **Done when:** the seeded history plus a clean run produces an L1 → L2 proposal; an attack demotes to L0; tests cover the
 eligibility math.
+
+- **As built:** promotion thresholds per level (L1: 3 clean payments / 28 days; L2: 15 / 28; L3: 30 / 28 + 3 owner
+  approvals; L4: 60 / 56 + 5 approvals), measured since the later of the window start or the last demotion; any block
+  or denial in that window disqualifies. Proposals are refreshed after each successful run and carry a written case
+  (fast-tier Claude, deterministic offline fallback) plus the record they were based on. Accepting lengthens the
+  leash; the owner can shorten it instantly from the ladder; a blocked attack demotes one level and closes any open
+  proposal. The control tower shows a banner when a proposal is waiting.
 
 ### Step 12: Attack Lab
 

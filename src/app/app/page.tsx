@@ -159,6 +159,25 @@ async function Tower() {
         </Card>
       </div>
 
+      {d.proposal ? (
+        <Card className="border-primary/40">
+          <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <Sparkles className="text-primary mt-0.5 size-5 shrink-0" aria-hidden />
+              <div>
+                <p className="font-medium">{d.proposal.reason}</p>
+                <p className="text-muted text-sm">
+                  Your agent&apos;s track record qualifies for a longer leash. You decide.
+                </p>
+              </div>
+            </div>
+            <ButtonLink href="/app/trust" variant="secondary">
+              Review
+            </ButtonLink>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {d.pending.length ? (
         <Card className="border-review/40">
           <CardHeader>

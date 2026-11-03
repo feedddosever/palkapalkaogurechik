@@ -17,6 +17,7 @@ import { getPayPal, SimulatedPayPal } from "@/server/paypal";
 import { currentWorkspaceId, nextMandateVersion, workspaceBasics } from "@/server/views";
 import { askLedger } from "@/server/ai/ledger-query";
 import { ledgerRows } from "@/server/ledger";
+import { decideProposal, shortenLeash } from "@/server/trust/engine";
 
 /** Server Actions. Each one re-derives the workspace and checks ownership of what it touches. */
 
@@ -212,4 +213,27 @@ export async function askLedgerAction(question: string, gridSchema: unknown): Pr
     weeks: uniq(rows.map((r) => r.week)),
   });
   return { state: answer.state, explanation: answer.explanation, source: answer.source };
+}
+
+export async function decideProposalAction(formData: FormData): Promise<void> {
+  const proposalId = String(formData.get("proposalId") ?? "");
+  const decision = formData.get("decision") === "accept" ? "accept" : "decline";
+  const db = await getDb();
+  const workspaceId = await currentWorkspaceId();
+  const [p] = await db
+    .select()
+    .from(t.trustEvents)
+    .where(and(eq(t.trustEvents.id, proposalId), eq(t.trustEvents.workspaceId, workspaceId)));
+  if (!p) throw new Error("Proposal not found");
+  await decideProposal(db, proposalId, decision);
+  refresh();
+}
+
+export async function shortenLeashAction(formData: FormData): Promise<void> {
+  const level = Number(formData.get("level"));
+  if (![0, 1, 2, 3].includes(level)) throw new Error("Invalid level");
+  const db = await getDb();
+  const { agent } = await workspaceBasics(db, await currentWorkspaceId());
+  await shortenLeash(db, agent.id, level as 0 | 1 | 2 | 3);
+  refresh();
 }

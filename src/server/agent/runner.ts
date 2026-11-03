@@ -4,6 +4,7 @@ import type { DB } from "@/server/db/client";
 import { agentRuns } from "@/server/db/schema";
 import { features } from "@/server/env";
 import type { PayPalGateway } from "@/server/paypal";
+import { refreshProposal } from "@/server/trust/engine";
 import { emit } from "./events";
 import { runClaudeAgent } from "./ops-agent";
 import { runScriptedAgent } from "./scripted";
@@ -44,6 +45,8 @@ export async function runAgent(
   const ctx: ToolContext = { db, workspaceId, agentId, runId, task, ai, paypal, results: [] };
   try {
     const summary = driver === "claude" ? await runClaudeAgent(ctx) : await runScriptedAgent(ctx, mode);
+    // A clean run may have earned a longer leash: open a proposal for the owner (never auto-promote).
+    await refreshProposal(db, agentId, { ai }).catch(() => null);
     await db
       .update(agentRuns)
       .set({ status: "succeeded", summary, finishedAt: new Date() })

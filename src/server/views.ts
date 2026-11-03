@@ -8,6 +8,7 @@ import { PolicySchema } from "@/server/guard/policy";
 import { ruleCardFromPolicy, type RuleCard } from "@/server/guard/rule-card";
 import type { AutonomyLevel } from "@/server/guard/types";
 import { DEMO_SUPPLIERS } from "@/server/catalog/demo-suppliers";
+import { openProposal } from "@/server/trust/engine";
 import { DEFAULT_WORKSPACE_ID, ensureDefaultWorkspace } from "@/server/workspace";
 
 /** Read models for the UI. Every query is scoped to the caller's workspace. */
@@ -188,6 +189,7 @@ export async function dashboard(workspaceId: string) {
     lastRun: lastRun ?? null,
     rules,
     lastTrust: lastTrust ?? null,
+    proposal: await openProposal(db, agent.id),
   };
 }
 
