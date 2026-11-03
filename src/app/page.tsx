@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { BadgeCheck, Fingerprint, Gauge, ShieldCheck } from "lucide-react";
 import { LeashMeter } from "@/components/leash-meter";
-import { Logo } from "@/components/logo";
+import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,14 +32,14 @@ const principles = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-6">
-        <Logo />
-        <Badge tone="primary">Building for the PayPal + AI hackathon</Badge>
-      </header>
+      <SiteHeader />
 
       <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-4 pt-8 pb-20 sm:px-6 sm:pt-14">
         <section className="grid items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
           <div className="flex flex-col gap-6">
+            <Badge tone="primary" className="self-start">
+              Built for the PayPal + AI hackathon
+            </Badge>
             <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
               Let your AI agent spend.
               <span className="text-primary block">Safely, on PayPal.</span>
@@ -55,6 +55,9 @@ export default function Home() {
               </ButtonLink>
               <ButtonLink href="/app" size="lg" variant="secondary">
                 Open the control tower
+              </ButtonLink>
+              <ButtonLink href="/lab" size="lg" variant="ghost">
+                Try to break it
               </ButtonLink>
             </div>
             <Suspense fallback={<Skeleton className="h-7 w-80" />}>

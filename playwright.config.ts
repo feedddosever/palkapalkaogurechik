@@ -27,6 +27,6 @@ export default defineConfig({
         url: `${baseURL}/api/health`,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
-        env: { PGLITE_DIR: ".data/e2e-pglite", APP_URL: baseURL },
+        env: { PGLITE_DIR: ".data/e2e-pglite", APP_URL: baseURL, LAB_RUNS_PER_CLIENT: "500" },
       },
 });

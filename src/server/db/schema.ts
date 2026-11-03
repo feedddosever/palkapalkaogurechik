@@ -514,6 +514,67 @@ export const paypalSimIdempotency = pgTable("paypal_sim_idempotency", {
   createdAt: createdAt(),
 });
 
+// ─── Attack Lab ─────────────────────────────────────────────────────────────
+
+/**
+ * Text an Attack Lab visitor planted on a supplier product page, visible only inside that lab
+ * run's sandbox workspace. UNTRUSTED by definition.
+ */
+export const labPlants = pgTable(
+  "lab_plants",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    productId: text("product_id").notNull(),
+    text: text("text").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("lab_plants_ws_idx").on(t.workspaceId, t.productId)],
+);
+
+export type LabOutcome = {
+  passed: boolean;
+  headline: string;
+  blocked: number;
+  asked: number;
+  paid: number;
+  /** Dollars that left the hold for the attacker's benefit (0 when Leash held). */
+  breachedAmount: string;
+};
+
+/**
+ * One Attack Lab run. Deliberately NOT tied to the sandbox workspace by a foreign key: old
+ * sandboxes are cleaned up, but the public record of attacks (and the counter) stays.
+ */
+export const labRuns = pgTable(
+  "lab_runs",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id").notNull(),
+    runId: text("run_id").notNull(),
+    scenario: text("scenario").notNull(),
+    driver: text("driver", { enum: ["scripted", "hijacked", "claude"] }).notNull(),
+    attack: jsonb("attack"),
+    clientKey: text("client_key").notNull(),
+    aiLayers: boolean("ai_layers").notNull().default(false),
+    status: text("status", { enum: ["running", "done", "failed"] })
+      .notNull()
+      .default("running"),
+    outcome: jsonb("outcome").$type<LabOutcome>(),
+    blocked: integer("blocked").notNull().default(0),
+    costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+    createdAt: createdAt(),
+    finishedAt: ts("finished_at"),
+  },
+  (t) => [
+    index("lab_runs_created_idx").on(t.createdAt),
+    index("lab_runs_client_idx").on(t.clientKey, t.createdAt),
+    uniqueIndex("lab_runs_run_idx").on(t.runId),
+  ],
+);
+
 // ─── Receipt signing keys ───────────────────────────────────────────────────
 
 /**

@@ -3,13 +3,14 @@ import { and, eq } from "drizzle-orm";
 import { newId } from "@/lib/ids";
 import { fromCents, multiplyAmount, sumAmounts, toCents } from "@/lib/money";
 import type { ScanSource } from "@/server/ai/scanner";
-import { marketQuoteFor, readProductPage, resolveProduct } from "@/server/catalog";
+import { marketQuoteFor, resolveProduct } from "@/server/catalog";
 import { priceSignal } from "@/server/catalog/market";
 import type { DB } from "@/server/db/client";
 import * as t from "@/server/db/schema";
 import { env } from "@/server/env";
 import { buildGuardContext } from "@/server/guard/context";
 import { normalizeName } from "@/server/guard/payee-match";
+import { productPageFor } from "@/server/lab/plants";
 import { ALL_LAYERS, runGuard, type GuardDecision, type GuardLayers } from "@/server/guard/pipeline";
 import type { GuardRequest, Verdict } from "@/server/guard/types";
 import { getPayPal, PayPalError, recordPayPalOp, type PayPalGateway } from "@/server/paypal";
@@ -68,7 +69,11 @@ export type SubmitResult = {
 
 type Built = { request: GuardRequest; sources: ScanSource[]; marketNote?: string; cycleId?: string };
 
-async function buildPurchase(input: PurchaseInput): Promise<Omit<Built, "cycleId">> {
+async function buildPurchase(
+  db: DB,
+  workspaceId: string,
+  input: PurchaseInput,
+): Promise<Omit<Built, "cycleId">> {
   if (input.items.length === 0) throw new PaymentInputError("A purchase needs at least one item.");
   const resolved = input.items.map((i) => {
     const p = resolveProduct(i.productId);
@@ -91,12 +96,15 @@ async function buildPurchase(input: PurchaseInput): Promise<Omit<Built, "cycleId
     quantity,
     unitPrice: p.unitPrice,
   }));
-  const sources: ScanSource[] = resolved.map(({ p }) => ({
-    id: `listing:${p.productId}`,
-    kind: "listing",
-    text: readProductPage(p.productId) ?? "",
-    label: `the ${p.supplierName} listing for "${p.name}"`,
-  }));
+  const sources: ScanSource[] = [];
+  for (const { p } of resolved) {
+    sources.push({
+      id: `listing:${p.productId}`,
+      kind: "listing",
+      text: (await productPageFor(db, workspaceId, p.productId)) ?? "",
+      label: `the ${p.supplierName} listing for "${p.name}"`,
+    });
+  }
   const notes: string[] = [];
   for (const { p } of resolved) {
     const q = await marketQuoteFor({ sku: p.sku, category: p.category, title: p.name });
@@ -164,7 +172,7 @@ async function extraSources(db: DB, workspaceId: string, ids: string[] = []): Pr
   for (const id of ids) {
     const [kind, ref] = id.split(":", 2);
     if (kind === "listing" && ref) {
-      const text = readProductPage(ref);
+      const text = await productPageFor(db, workspaceId, ref);
       if (text) out.push({ id, kind: "listing", text, label: `the product page ${ref}` });
     } else if (kind === "email" && ref) {
       const [m] = await db
@@ -252,7 +260,9 @@ export async function submitPaymentRequest(
   }
 
   const built =
-    input.kind === "purchase" ? await buildPurchase(input) : await buildInvoice(db, workspaceId, input);
+    input.kind === "purchase"
+      ? await buildPurchase(db, workspaceId, input)
+      : await buildInvoice(db, workspaceId, input);
   const request: GuardRequest = { ...built.request, idempotencyKey };
   const seen = new Set(built.sources.map((s) => s.id));
   const sources = [

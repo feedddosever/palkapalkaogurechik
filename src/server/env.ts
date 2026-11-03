@@ -50,6 +50,13 @@ const schema = z.object({
 
   // Ed25519 private key (PKCS#8, base64) for intent receipts. Generated in dev if absent.
   RECEIPT_SIGNING_KEY: optional,
+
+  // Attack Lab (public): on = normal; offline = never call Claude from the lab; off = kill switch.
+  LAB_MODE: z.enum(["on", "offline", "off"]).default("on"),
+  /** Daily cap on estimated Claude spend from lab runs; above it the lab runs offline. */
+  LAB_DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(5),
+  /** Lab runs allowed per visitor in 10 minutes. */
+  LAB_RUNS_PER_CLIENT: z.coerce.number().int().positive().default(6),
 });
 
 export type Env = z.infer<typeof schema>;
@@ -98,6 +105,11 @@ function load() {
     cached = { env, features: deriveFeatures(env) };
   }
   return cached;
+}
+
+/** Test hook: re-read process.env on next access. */
+export function resetEnvForTesting(): void {
+  cached = undefined;
 }
 
 export const env = new Proxy({} as Env, {

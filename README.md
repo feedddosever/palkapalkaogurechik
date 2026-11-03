@@ -30,6 +30,12 @@ approve the weekly PayPal hold (an offline simulator without keys), run the agen
 verify the receipt. `npm run demo:restock` tells the same story in the terminal. To switch integrations to live mode, copy `.env.example` to `.env.local` and fill in the
 keys you have. `/api/health` reports which integrations are live.
 
+Then try to break it at http://localhost:3000/lab: the **Attack Lab** runs four preset attacks (hidden page
+instructions, a "we changed banks" invoice, split payments, double-paying an invoice) and an honest control week,
+or your own phishing email or planted page text, each in a fresh sandbox café with simulated PayPal money. A public
+kill switch (`LAB_MODE`), a daily AI budget (`LAB_DAILY_BUDGET_USD`) and per-visitor rate limits keep it safe to
+leave open.
+
 | Command                                      | What it does                                    |
 | -------------------------------------------- | ----------------------------------------------- |
 | `npm run dev`                                | Start the dev server                            |

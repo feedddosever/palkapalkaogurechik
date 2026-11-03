@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { getAnthropic, resolveModel } from "@/server/ai/client";
+import { estimateCost, getAnthropic, resolveModel } from "@/server/ai/client";
 import { emit } from "./events";
 import { executeTool, TOOL_DEFS, type ToolContext } from "./tools";
 
@@ -57,6 +57,15 @@ export async function runClaudeAgent(c: ToolContext): Promise<string> {
       }
       throw err;
     }
+
+    c.costUsd =
+      (c.costUsd ?? 0) +
+      estimateCost(response.model, {
+        input: response.usage.input_tokens,
+        output: response.usage.output_tokens,
+        cacheRead: response.usage.cache_read_input_tokens ?? 0,
+        cacheWrite: response.usage.cache_creation_input_tokens ?? 0,
+      });
 
     for (const block of response.content) {
       if (block.type === "thinking" && block.thinking.trim()) {

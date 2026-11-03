@@ -28,7 +28,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 9   | Product UI: landing, onboarding, control tower, agent console, mobile approvals | —                                 | ✅     |
 | 10  | Ledger on AG Grid (+ natural-language queries)                                  | AG Grid license (optional)        | ✅     |
 | 11  | Autonomy levels & trust engine                                                  | —                                 | ✅     |
-| 12  | Attack Lab                                                                      | —                                 | ⬜     |
+| 12  | Attack Lab                                                                      | —                                 | ✅     |
 | 13  | Go live on PayPal sandbox (**key gate**)                                        | PayPal sandbox app                | ⬜     |
 | 14  | Allowance cycle jobs (void, reauthorize, renew, reconcile)                      | —                                 | ⬜     |
 | 15  | LeashBench (measured security results)                                          | Anthropic key                     | ⬜     |
@@ -560,7 +560,7 @@ eligibility math.
   leash; the owner can shorten it instantly from the ladder; a blocked attack demotes one level and closes any open
   proposal. The control tower shows a banner when a proposal is waiting.
 
-### Step 12: Attack Lab
+### Step 12: Attack Lab ✅
 
 **Build**
 
@@ -571,6 +571,19 @@ eligibility math.
 - Public "attacks blocked" counter; rate limiting + cost cap + kill switch.
 
 **Done when:** all presets are blocked with clear explanations, the control passes, and custom attacks run sandboxed.
+
+- **As built:** every run provisions its own seeded sandbox café and funds a $500 hold in Leash's PayPal simulator
+  (always the simulator, even when the app runs on the PayPal sandbox), then drives the same agent tools and guard as
+  the app. Presets are deterministic scripts: hidden injection (gift cards blocked; the BulkBarn order goes to Dana),
+  changed payee (blocked), structuring 4+3+2 cases (paid within the limit → approval → blocked as a pattern),
+  duplicate (retry replays idempotently; second notice blocked as a duplicate invoice), honest control (both paid).
+  Custom attacks: an email (optionally with an invoice) or text planted on a product page, visible only inside that
+  sandbox (`lab_plants`, read through `productPageFor`). The "hijacked agent" obeys what the text asks (Claude fast
+  tier extracts the asks; heuristic offline); the "real Claude agent" option runs the ops agent on its normal task.
+  Outcomes are judged on the attacker's requests only and stored in `lab_runs` (kept after sandboxes are cleaned
+  up after 72 h), which also feeds the public "attack payments blocked" counter. Limits: 6 runs per visitor per
+  10 minutes (hashed IP, `LAB_RUNS_PER_CLIENT`), 2 real-agent runs per hour, 120 runs per hour overall;
+  `LAB_MODE=on|offline|off`; `LAB_DAILY_BUDGET_USD` (estimated Claude spend) drops the lab to offline when reached.
 
 ### Step 13: Go live on PayPal sandbox (key gate)
 

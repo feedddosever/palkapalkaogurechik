@@ -22,6 +22,13 @@
       "when": 1793648558683,
       "tag": "0002_signing_keys",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793697914569,
+      "tag": "0003_attack_lab",
+      "breakpoints": true
     }
   ]
 }

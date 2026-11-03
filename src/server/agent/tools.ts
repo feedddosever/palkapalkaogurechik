@@ -2,12 +2,13 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { formatMoney } from "@/lib/format";
 import { fromCents, toCents } from "@/lib/money";
-import { readProductPage, resolveProduct, searchCatalog } from "@/server/catalog";
+import { resolveProduct, searchCatalog } from "@/server/catalog";
 import type { DB } from "@/server/db/client";
 import * as t from "@/server/db/schema";
 import { LEVELS } from "@/server/guard/levels";
 import { ruleCardFromPolicy } from "@/server/guard/rule-card";
 import type { AutonomyLevel } from "@/server/guard/types";
+import { productPageFor } from "@/server/lab/plants";
 import { getActiveCycle, getActiveMandate } from "@/server/payments/cycles";
 import { PaymentInputError, submitPaymentRequest, type SubmitResult } from "@/server/payments/service";
 import type { PayPalGateway } from "@/server/paypal";
@@ -123,6 +124,8 @@ export type ToolContext = {
   /** Every payment request made during the run (for the summary and tests). */
   results: SubmitResult[];
   finished?: string;
+  /** Estimated Claude spend by the agent itself during the run (guard spend is recorded per decision). */
+  costUsd?: number;
 };
 
 type ToolInput = Record<string, unknown>;
@@ -169,7 +172,7 @@ async function run(name: string, input: ToolInput, c: ToolContext): Promise<unkn
     }
     case "read_product_page": {
       const id = String(input.product_id ?? "");
-      const text = readProductPage(id);
+      const text = await productPageFor(db, workspaceId, id);
       if (!text) return { error: `No product page for ${id}` };
       return { source_id: `listing:${id}`, page_text: text };
     }

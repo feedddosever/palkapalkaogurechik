@@ -58,13 +58,31 @@ const VERDICT: Record<string, { tone: TimelineTone; icon: React.ReactNode; label
   BLOCK: { tone: "block", icon: <ShieldAlert />, label: "Blocked" },
 };
 
-export function RunTimeline({ runId, initiallyDone = false }: { runId: string; initiallyDone?: boolean }) {
+export function RunTimeline({
+  runId,
+  initiallyDone = false,
+  eventsUrl = `/api/runs/${encodeURIComponent(runId)}/events`,
+  lab = false,
+  onDone,
+}: {
+  runId: string;
+  initiallyDone?: boolean;
+  /** Where to stream events from (the Attack Lab uses its own public, sandbox-scoped stream). */
+  eventsUrl?: string;
+  /** Attack Lab: approvals go to a simulated owner, not to a page in someone's app. */
+  lab?: boolean;
+  onDone?: () => void;
+}) {
   const [events, setEvents] = useState<AgentEvent[]>([]);
   const [state, setState] = useState<"connecting" | "live" | "done" | "error">("connecting");
   const bottom = useRef<HTMLDivElement>(null);
+  const done = useRef(onDone);
+  useEffect(() => {
+    done.current = onDone;
+  }, [onDone]);
 
   useEffect(() => {
-    const source = new EventSource(`/api/runs/${encodeURIComponent(runId)}/events`);
+    const source = new EventSource(eventsUrl);
     source.addEventListener("agent", (e) => {
       const ev = JSON.parse((e as MessageEvent).data) as AgentEvent;
       setState("live");
@@ -73,13 +91,14 @@ export function RunTimeline({ runId, initiallyDone = false }: { runId: string; i
     source.addEventListener("end", () => {
       setState("done");
       source.close();
+      done.current?.();
     });
     source.onerror = () => {
       setState((s) => (s === "done" ? s : "error"));
       source.close();
     };
     return () => source.close();
-  }, [runId]);
+  }, [eventsUrl]);
 
   useEffect(() => {
     if (state === "live") bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -118,7 +137,7 @@ export function RunTimeline({ runId, initiallyDone = false }: { runId: string; i
       </div>
       <Timeline>
         {visible.map((e, idx) => (
-          <EventItem key={e.id} event={e} last={idx === visible.length - 1} />
+          <EventItem key={e.id} event={e} last={idx === visible.length - 1} lab={lab} />
         ))}
       </Timeline>
       {state === "live" ? (
@@ -134,7 +153,7 @@ export function RunTimeline({ runId, initiallyDone = false }: { runId: string; i
   );
 }
 
-function EventItem({ event, last }: { event: AgentEvent; last: boolean }) {
+function EventItem({ event, last, lab }: { event: AgentEvent; last: boolean; lab: boolean }) {
   const p = event.payload;
   const time = new Date(event.at).toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -221,12 +240,19 @@ function EventItem({ event, last }: { event: AgentEvent; last: boolean }) {
           meta={time}
           last={last}
         >
-          <Link
-            href={`/approve/${String(p.approvalId)}`}
-            className="text-primary font-medium hover:underline"
-          >
-            Review {formatMoney(String(p.amount))} for {String(p.supplier)}
-          </Link>
+          {lab ? (
+            <span>
+              {formatMoney(String(p.amount))} for {String(p.supplier)} waits for Dana. Nothing moves until she
+              taps Approve.
+            </span>
+          ) : (
+            <Link
+              href={`/approve/${String(p.approvalId)}`}
+              className="text-primary font-medium hover:underline"
+            >
+              Review {formatMoney(String(p.amount))} for {String(p.supplier)}
+            </Link>
+          )}
         </TimelineItem>
       );
     case "payment_executed":

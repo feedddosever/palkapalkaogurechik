@@ -10,6 +10,7 @@ const LINKS = [
   { href: "/app/trust", label: "Trust" },
   { href: "/app/rules", label: "Rules" },
   { href: "/suppliers", label: "Suppliers" },
+  { href: "/lab", label: "Attack Lab" },
 ];
 
 export function AppNav() {

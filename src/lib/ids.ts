@@ -20,7 +20,9 @@ export type IdPrefix =
   | "rcp"
   | "run"
   | "tre"
-  | "whk";
+  | "whk"
+  | "lab"
+  | "plant";
 
 /** Prefixed, URL-safe, lowercase id, e.g. `req_3k9x…`. */
 export function newId(prefix: IdPrefix): string {
