@@ -26,7 +26,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 7   | Ops agent + execution pipeline                                                  | —                                 | ✅     |
 | 8   | Signed intent receipts + public verifier                                        | —                                 | ✅     |
 | 9   | Product UI: landing, onboarding, control tower, agent console, mobile approvals | —                                 | ✅     |
-| 10  | Ledger on AG Grid (+ natural-language queries)                                  | AG Grid license (optional)        | ⬜     |
+| 10  | Ledger on AG Grid (+ natural-language queries)                                  | AG Grid license (optional)        | ✅     |
 | 11  | Autonomy levels & trust engine                                                  | —                                 | ⬜     |
 | 12  | Attack Lab                                                                      | —                                 | ⬜     |
 | 13  | Go live on PayPal sandbox (**key gate**)                                        | PayPal sandbox app                | ⬜     |
@@ -521,7 +521,7 @@ N allowed, 1 needs approval, 2 attacks blocked, correct ledger rows, retry produ
 **Done when:** the whole demo story (minus the ledger, trust and lab pages) is clickable end to end in simulator mode on
 desktop and phone widths.
 
-### Step 10: Ledger on AG Grid
+### Step 10: Ledger on AG Grid ✅
 
 **Build**
 
@@ -530,6 +530,14 @@ desktop and phone widths.
 - **Ask the ledger** box: natural language → AG Grid state through the grid's AI Toolkit / structured state API (Step 6
   writer), e.g. _"blocked or declined over $50 this week, grouped by supplier"_.
 - Row detail drawer linking to the receipt verifier and the PayPal IDs.
+
+- **As built:** AG Grid v36 Enterprise (`AllEnterpriseModule` + AG Charts Enterprise): drag-to-group panel,
+  pivot, side bar, aggregation status bar, set/number/date filters, bar sparklines (supplier's 5-week spend),
+  cell-range + pivot charts, Excel/CSV export, theme from Leash tokens (light/dark), compact columns on phones.
+  "Ask the ledger" uses the **AG Grid AI Toolkit**: `api.getStructuredSchema()` is wrapped as Claude's
+  structured-output schema and the answer goes straight into `api.setState()`; offline, a keyword parser emits
+  the same GridState. Ledger rows include seeded history so grouping/pivots have real data; "Spent" counts only
+  money that moved.
 
 **Done when:** 3 scripted NL queries produce the right grid state; works with the trial watermark; license key picked up
 from env if provided.

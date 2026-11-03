@@ -333,7 +333,11 @@ export async function submitPaymentRequest(
       layer: "combined" as const,
       verdict: decision.verdict,
       codes: decision.decidedBy,
-      reasons: decision.layers.filter((l) => l.verdict === decision.verdict).flatMap((l) => l.reasons),
+      // An allowed payment needs no "why"; only escalations and blocks carry reasons.
+      reasons:
+        decision.verdict === "ALLOW"
+          ? []
+          : decision.layers.filter((l) => l.verdict === decision.verdict).flatMap((l) => l.reasons),
       details: { attack: decision.attack, usage: decision.usage },
       latencyMs: decision.latencyMs,
       model: decision.usage.map((u) => u.model).join(",") || null,
@@ -341,10 +345,13 @@ export async function submitPaymentRequest(
     },
   ]);
 
-  const reasons = decision.layers
-    .filter((l) => l.verdict === decision.verdict)
-    .flatMap((l) => l.reasons)
-    .slice(0, 4);
+  const reasons =
+    decision.verdict === "ALLOW"
+      ? []
+      : decision.layers
+          .filter((l) => l.verdict === decision.verdict)
+          .flatMap((l) => l.reasons)
+          .slice(0, 4);
   const result: SubmitResult = {
     requestId,
     status: STATUS_FOR[decision.verdict],

@@ -15,6 +15,8 @@ import { closeCycle, getActiveCycle, startCycle } from "@/server/payments/cycles
 import { decideApproval } from "@/server/payments/service";
 import { getPayPal, SimulatedPayPal } from "@/server/paypal";
 import { currentWorkspaceId, nextMandateVersion, workspaceBasics } from "@/server/views";
+import { askLedger } from "@/server/ai/ledger-query";
+import { ledgerRows } from "@/server/ledger";
 
 /** Server Actions. Each one re-derives the workspace and checks ownership of what it touches. */
 
@@ -190,4 +192,24 @@ export async function endWeekAction(): Promise<void> {
   const cycle = await getActiveCycle(db, agent.id);
   if (cycle) await closeCycle(db, cycle.id);
   refresh();
+}
+
+export type LedgerAnswerState = {
+  state: Record<string, unknown>;
+  explanation: string;
+  source: "ai" | "offline";
+};
+
+/** "Ask the ledger": the browser sends the grid's own state schema (AG Grid AI Toolkit). */
+export async function askLedgerAction(question: string, gridSchema: unknown): Promise<LedgerAnswerState> {
+  const workspaceId = await currentWorkspaceId();
+  const rows = await ledgerRows(workspaceId);
+  const uniq = (xs: string[]) => [...new Set(xs)].sort();
+  const answer = await askLedger(String(question ?? ""), gridSchema, {
+    suppliers: uniq(rows.map((r) => r.supplier)),
+    statuses: uniq(rows.map((r) => r.status)),
+    categories: uniq(rows.map((r) => r.category)),
+    weeks: uniq(rows.map((r) => r.week)),
+  });
+  return { state: answer.state, explanation: answer.explanation, source: answer.source };
 }

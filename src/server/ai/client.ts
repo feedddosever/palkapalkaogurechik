@@ -194,3 +194,90 @@ export function untrustedBlock(sourceId: string, kind: string, text: string): st
   const safe = text.replace(/<\/?untrusted_content[^>]*>/gi, "[tag removed]");
   return `<untrusted_content source_id="${sourceId}" kind="${kind}">\n${safe}\n</untrusted_content>`;
 }
+
+/** Keywords outside the structured-outputs subset; dropped from runtime schemas (e.g. AG Grid's). */
+const UNSUPPORTED_SCHEMA_KEYS = new Set([
+  "minimum",
+  "maximum",
+  "exclusiveMinimum",
+  "exclusiveMaximum",
+  "multipleOf",
+  "minItems",
+  "maxItems",
+  "minProperties",
+  "maxProperties",
+  "pattern",
+  "minLength",
+  "maxLength",
+]);
+
+export function sanitizeJsonSchema(schema: unknown): unknown {
+  if (Array.isArray(schema)) return schema.map(sanitizeJsonSchema);
+  if (!schema || typeof schema !== "object") return schema;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(schema as Record<string, unknown>)) {
+    if (UNSUPPORTED_SCHEMA_KEYS.has(k)) continue;
+    out[k] = sanitizeJsonSchema(v);
+  }
+  if (out.type === "object" && out.properties && out.additionalProperties === undefined) {
+    out.additionalProperties = false;
+  }
+  return out;
+}
+
+/** Structured output against a JSON schema known only at runtime (e.g. AG Grid's state schema). */
+export async function runJsonSchema<T = unknown>({
+  tier,
+  system,
+  user,
+  schema,
+  effort = "low",
+  maxTokens = 4000,
+}: {
+  tier: Tier;
+  system: string;
+  user: string;
+  schema: Record<string, unknown>;
+  effort?: Effort;
+  maxTokens?: number;
+}): Promise<{ data: T; usage: AiUsage }> {
+  const client = getAnthropic();
+  const model = await resolveModel(tier);
+  const started = Date.now();
+  const response = await client.beta.messages.create({
+    model,
+    max_tokens: maxTokens,
+    system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+    messages: [{ role: "user", content: user }],
+    output_config: { format: { type: "json_schema", schema }, effort },
+  });
+  if (response.stop_reason === "refusal") {
+    throw new AiRefusalError(
+      response.stop_details?.category ?? null,
+      response.stop_details?.explanation ?? "The model declined this request.",
+    );
+  }
+  const text = response.content.find((b) => b.type === "text");
+  if (!text || text.type !== "text")
+    throw new Error(`No JSON in response (stop_reason: ${response.stop_reason})`);
+  const u = response.usage;
+  const cacheRead = u.cache_read_input_tokens ?? 0;
+  const cacheWrite = u.cache_creation_input_tokens ?? 0;
+  return {
+    data: JSON.parse(text.text) as T,
+    usage: {
+      model: response.model,
+      inputTokens: u.input_tokens,
+      outputTokens: u.output_tokens,
+      cacheReadTokens: cacheRead,
+      cacheWriteTokens: cacheWrite,
+      costUsd: estimateCost(response.model, {
+        input: u.input_tokens,
+        output: u.output_tokens,
+        cacheRead,
+        cacheWrite,
+      }),
+      latencyMs: Date.now() - started,
+    },
+  };
+}
