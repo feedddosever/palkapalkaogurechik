@@ -32,7 +32,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 13  | Go live on PayPal sandbox (**key gate**)                                        | PayPal sandbox app                | ⬜     |
 | 14  | Allowance cycle jobs (void, reauthorize, renew, reconcile)                      | —                                 | ✅     |
 | 15  | LeashBench (measured security results)                                          | Anthropic key                     | ⬜     |
-| 16  | Bring-your-own-agent: Leash MCP server + Agent Toolkit guard                    | —                                 | ⬜     |
+| 16  | Bring-your-own-agent: Leash MCP server + Agent Toolkit guard                    | —                                 | ✅     |
 | 17  | Judge mode + deploy to Render                                                   | Render account                    | ⬜     |
 | 18  | Hardening & polish                                                              | —                                 | ⬜     |
 | 19  | Docs & submission package                                                       | —                                 | ⬜     |
@@ -646,7 +646,7 @@ eligibility math.
 
 **Done when:** the numbers are published in the README and on `/bench`; the layered config beats both single-layer configs.
 
-### Step 16: Bring-your-own-agent
+### Step 16: Bring-your-own-agent ✅
 
 **Build**
 
@@ -654,10 +654,27 @@ eligibility math.
   `get_budget`, `search_products`, `request_purchase`, `pay_invoice`, `get_request_status`.
 - **Agent Toolkit guard:** wrap the money-moving tools of `@paypal/agent-toolkit` so they route through the Leash
   pipeline; example script.
-- `/developers` page with copy-paste Claude Desktop config.
+- `/developers` page with copy-paste Claude Desktop config (built as `/app/connect`).
 
 **Done when:** an external MCP client completes a purchase that appears in the ledger with a receipt; an injected
 request from it gets blocked.
+
+- **As built:** per-agent API keys (`leash_sk_…`, SHA-256 hash stored, shown once, revocable, 60 calls/min per key).
+  `/api/mcp` serves MCP over Streamable HTTP (stateless JSON, SDK 1.32 Web-standard transport) with the same tools
+  as Leash's own agent (`get_budget`, `check_inventory`, `search_products`, `read_product_page`, `read_inbox`,
+  `read_email`, `request_purchase`, `pay_invoice`) plus `get_request_status` and `finish`; optional
+  `idempotency_key` for safe retries. An outside agent's calls form a session run (origin `mcp`) in the owner's
+  live console; sessions close on `finish` or after 30 quiet minutes. `mcp/stdio.ts` (`npm run mcp:stdio`) bridges
+  stdio clients to the HTTP endpoint (PGlite can't be shared between processes). `/app/connect` ("Connect" in the
+  nav) creates keys and shows copy-paste setup for Claude Code, Claude Desktop (`mcp-remote`), stdio and the
+  toolkit. PayPal Agent Toolkit: its money-out tools are `create_refund` and `accept_dispute_claim`, so Leash
+  gained a `refund` request kind (no hold, no payee swap possible; unstated amounts and dispute concessions always
+  go to the owner; L4 can't waive the limit for refunds; duplicates per capture/dispute blocked). `withLeash()`
+  (`src/sdk/with-leash.ts`, dependency-free) asks `POST /api/v1/guard` first, runs the tool only when approved, and
+  reports the PayPal id to `POST /api/v1/guard/{id}`. `examples/paypal-agent-toolkit` shows it with the AI SDK
+  (not in CI). E2E: a key created in the UI, an SDK client over HTTP buys espresso (receipt verifies), gift cards
+  from the injected listing are blocked, the console shows the MCP session, a revoked key gets 401; the stdio
+  bridge lists the tools and reads the budget.
 
 ### Step 17: Judge mode + deploy to Render
 

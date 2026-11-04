@@ -33,6 +33,7 @@ export const RULE_CODES = [
   "DUPLICATE_INVOICE",
   "NEW_ITEM",
   "LEVEL_REQUIRES_APPROVAL",
+  "AMOUNT_UNSTATED",
 ] as const;
 
 export type RuleCode = (typeof RULE_CODES)[number];
@@ -47,22 +48,28 @@ export type RuleResult = {
   data?: Record<string, unknown>;
 };
 
+export type RequestKind = "purchase" | "invoice" | "refund";
+
 /** What the agent is asking Leash to pay. */
 export type GuardRequest = {
-  kind: "purchase" | "invoice";
+  /** refund = money going back out through an outside tool (PayPal Agent Toolkit), not the hold. */
+  kind: RequestKind;
   supplierSlug?: string;
   supplierName: string;
   payeeEmail: string;
   items: RequestItem[];
   amount: string;
   currency: string;
+  /** Invoice number; for refunds, the PayPal capture or dispute id. */
   invoiceNumber?: string;
+  /** A refund or dispute concession whose amount the caller didn't state. */
+  amountUnknown?: boolean;
   idempotencyKey: string;
 };
 
 export type RecentRequest = {
   id: string;
-  kind: "purchase" | "invoice";
+  kind: RequestKind;
   supplierSlug?: string;
   supplierName: string;
   amount: string;

@@ -28,7 +28,7 @@ export type ReceiptPayload = {
   intent: { ownerText: string; policyHash: string; mandateVersion: number; mandateCreatedAt: string };
   cart: {
     requestId: string;
-    kind: "purchase" | "invoice";
+    kind: "purchase" | "invoice" | "refund";
     supplier: string;
     payee: string;
     items: { name: string; productId?: string; category: string; quantity: number; unitPrice: string }[];

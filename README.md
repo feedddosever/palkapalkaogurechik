@@ -36,14 +36,33 @@ or your own phishing email or planted page text, each in a fresh sandbox café w
 kill switch (`LAB_MODE`), a daily AI budget (`LAB_DAILY_BUDGET_USD`) and per-visitor rate limits keep it safe to
 leave open.
 
-| Command                                      | What it does                                       |
-| -------------------------------------------- | -------------------------------------------------- |
-| `npm run dev`                                | Start the dev server                               |
-| `npm test`                                   | Unit tests (Vitest)                                |
-| `npm run test:e2e`                           | End-to-end tests (Playwright, desktop + mobile)    |
-| `npm run typecheck` / `npm run lint`         | Static checks                                      |
-| `npm run db:generate` / `npm run db:migrate` | Create / apply database migrations                 |
-| `npm run jobs:cycles`                        | Allowance scheduler: reauthorize, renew, reconcile |
+### Bring your own agent
+
+Create a key under **Connect** (`/app/connect`) and point any MCP client at `/api/mcp` (Streamable HTTP, `Authorization:
+Bearer leash_sk_…`). Your agent gets the same tools as Leash's own and meets the same guard: it can look things up and
+_ask_ Leash to pay, and nothing it can call sends money anywhere.
+
+```bash
+claude mcp add --transport http leash http://localhost:3000/api/mcp --header "Authorization: Bearer leash_sk_…"
+```
+
+Claude Desktop and other stdio clients use `npm run mcp:stdio` (a small bridge to the HTTP endpoint) or `mcp-remote`;
+the Connect page has copy-paste configs.
+
+Already on **PayPal's Agent Toolkit**? `withLeash()` ([`src/sdk/with-leash.ts`](src/sdk/with-leash.ts)) puts Leash
+in front of its money-out tools (`create_refund`, `accept_dispute_claim`): small clean refunds run, big, unstated or
+suspicious ones wait for the owner or are blocked, and nothing is refunded twice. See
+[`examples/paypal-agent-toolkit`](examples/paypal-agent-toolkit).
+
+| Command                                      | What it does                                                |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| `npm run dev`                                | Start the dev server                                        |
+| `npm test`                                   | Unit tests (Vitest)                                         |
+| `npm run test:e2e`                           | End-to-end tests (Playwright, desktop + mobile)             |
+| `npm run typecheck` / `npm run lint`         | Static checks                                               |
+| `npm run db:generate` / `npm run db:migrate` | Create / apply database migrations                          |
+| `npm run jobs:cycles`                        | Allowance scheduler: reauthorize, renew, reconcile          |
+| `npm run mcp:stdio`                          | stdio MCP bridge for Claude Desktop (needs `LEASH_API_KEY`) |
 
 ## License
 

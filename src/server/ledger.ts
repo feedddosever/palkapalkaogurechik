@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { multiplyAmount, toCents } from "@/lib/money";
+import { describeRequest, requestEventLabel } from "@/lib/requests";
 import { marketQuoteFor } from "@/server/catalog";
 import { getDb } from "@/server/db/client";
 import * as t from "@/server/db/schema";
@@ -14,7 +15,7 @@ export type LedgerRow = {
   date: string;
   /** ISO date of the Monday starting that week (sortable; formatted in the grid). */
   week: string;
-  event: "Purchase" | "Invoice" | "PayPal hold" | "Hold reauthorized" | "Hold released";
+  event: "Purchase" | "Invoice" | "Refund" | "PayPal hold" | "Hold reauthorized" | "Hold released";
   supplier: string;
   category: string;
   description: string;
@@ -126,18 +127,16 @@ export async function ledgerRows(workspaceId: string): Promise<LedgerRow[]> {
       id: r.id,
       date: r.createdAt.toISOString(),
       week: weekStart(r.createdAt),
-      event: r.kind === "invoice" ? "Invoice" : "Purchase",
+      event: requestEventLabel(r.kind),
       supplier: r.supplierName,
       category:
-        r.kind === "invoice"
-          ? "Invoice"
+        r.kind !== "purchase"
+          ? requestEventLabel(r.kind)
           : (CATEGORY_LABEL[r.items[0]?.category ?? ""] ?? r.items[0]?.category ?? "Other"),
-      description:
-        r.kind === "invoice"
-          ? `Invoice ${r.invoiceNumber ?? ""}`.trim()
-          : r.items.map((i) => `${i.quantity}× ${i.name}`).join(", "),
+      description: describeRequest(r),
       amount: Number(r.amount),
-      spent: r.status === "executed" ? Number(r.amount) : null,
+      // "Spent" is money drawn from the PayPal hold; refunds go out through the PayPal account.
+      spent: r.status === "executed" && r.kind !== "refund" ? Number(r.amount) : null,
       status,
       decidedBy: r.historical ? "rules" : (combined?.codes.join(" + ") ?? "") || "rules",
       reason: r.historical

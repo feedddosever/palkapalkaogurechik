@@ -42,6 +42,8 @@ const WAIVERS: Waiver[] = [
   {
     code: "OVER_APPROVAL_THRESHOLD",
     minLevel: 4,
+    // Refunds don't come out of the hold, so the hold can't cap them.
+    when: (req) => req.kind !== "refund",
     why: "L4 may exceed the approval limit within the PayPal hold",
   },
 ];

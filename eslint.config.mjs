@@ -17,6 +17,8 @@ const eslintConfig = defineConfig([
     "playwright-report/**",
     "test-results/**",
     ".data/**",
+    // Standalone examples with their own dependencies.
+    "examples/**",
   ]),
 ]);
 

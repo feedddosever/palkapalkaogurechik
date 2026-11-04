@@ -51,6 +51,8 @@ export const agentActiveRule: Rule = (_req, _p, ctx) =>
     : [];
 
 export const holdRule: Rule = (req, _p, ctx) => {
+  // Refunds go out through the business's PayPal account (via an outside tool), not the hold.
+  if (req.kind === "refund") return [];
   if (!ctx.cycle) {
     return [
       finding(
@@ -90,6 +92,17 @@ export const currencyRule: Rule = (req, p) =>
     : [];
 
 export const amountRule: Rule = (req) => {
+  if (req.amountUnknown) {
+    return [
+      finding(
+        "AMOUNT_UNSTATED",
+        "NEEDS_APPROVAL",
+        req.invoiceNumber
+          ? `The amount isn't stated (a full refund or a dispute concession on ${req.invoiceNumber}), so you decide.`
+          : "The amount isn't stated, so you decide.",
+      ),
+    ];
+  }
   const amount = toCents(req.amount);
   if (amount <= 0) {
     return [finding("AMOUNT_MISMATCH", "BLOCK", "The payment amount must be greater than zero.")];
@@ -217,6 +230,7 @@ export const newItemRule: Rule = (req, _p, ctx) => {
 // ─── Who gets paid ──────────────────────────────────────────────────────────
 
 export const supplierRule: Rule = (req, p, ctx) => {
+  if (req.kind === "refund") return [];
   const slug = req.supplierSlug ?? ctx.supplier?.slug;
   if (slug && p.suppliers.block.includes(slug)) {
     return [finding("SUPPLIER_BLOCKED", "BLOCK", `You blocked ${req.supplierName}.`)];
@@ -242,6 +256,8 @@ export const supplierRule: Rule = (req, p, ctx) => {
 };
 
 export const payeeRule: Rule = (req, p, ctx) => {
+  // PayPal returns refunds to the original payer; there's no payee to swap.
+  if (req.kind === "refund") return [];
   const payee = normalizeEmail(req.payeeEmail);
   const known = ctx.knownPayees;
   const claimed = req.supplierSlug
@@ -316,19 +332,23 @@ export const structuringRule: Rule = (req, p, ctx) => {
 };
 
 export const duplicateRule: Rule = (req, _p, ctx) => {
-  if (req.kind === "invoice" && req.invoiceNumber) {
+  if ((req.kind === "invoice" || req.kind === "refund") && req.invoiceNumber) {
     const paid = ctx.recentRequests.find(
       (r) =>
+        r.kind === req.kind &&
         r.invoiceNumber === req.invoiceNumber &&
         PAID_STATUSES.has(r.status) &&
         r.idempotencyKey !== req.idempotencyKey,
     );
     if (paid) {
+      const day = paid.createdAt.toISOString().slice(0, 10);
       return [
         finding(
           "DUPLICATE_INVOICE",
           "BLOCK",
-          `Invoice ${req.invoiceNumber} was already paid on ${paid.createdAt.toISOString().slice(0, 10)}.`,
+          req.kind === "refund"
+            ? `${req.invoiceNumber} was already refunded on ${day}.`
+            : `Invoice ${req.invoiceNumber} was already paid on ${day}.`,
           { attack: true, data: { previousRequestId: paid.id } },
         ),
       ];

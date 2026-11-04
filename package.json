@@ -21,11 +21,13 @@
     "test:sandbox": "vitest run tests/sandbox",
     "demo:restock": "tsx scripts/demo-restock.ts",
     "jobs:cycles": "tsx scripts/cycle-jobs.ts",
+    "mcp:stdio": "tsx mcp/stdio.ts",
     "keys:generate": "tsx scripts/keys-generate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.3.0",
     "@electric-sql/pglite": "^0.5.14",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@paypal/paypal-server-sdk": "^2.5.0",
     "ag-grid-community": "^36.2.0",
     "ag-grid-enterprise": "^36.2.0",

@@ -168,7 +168,13 @@ function EventItem({ event, last, lab }: { event: AgentEvent; last: boolean; lab
           {String(p.task ?? "")}
           <div className="mt-1 flex flex-wrap gap-1.5">
             <Badge tone="neutral">
-              {p.driver === "claude" ? "Claude agent" : "Scripted agent (offline)"}
+              {p.driver === "claude"
+                ? "Claude agent"
+                : p.driver === "mcp"
+                  ? `Outside agent over MCP${p.agent ? `: ${String(p.agent)}` : ""}`
+                  : p.driver === "toolkit"
+                    ? "PayPal Agent Toolkit (guarded)"
+                    : "Scripted agent (offline)"}
             </Badge>
             {p.mode === "compromised" ? <Badge tone="block">Simulated hijacked agent</Badge> : null}
           </div>

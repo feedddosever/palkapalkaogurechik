@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { newId } from "@/lib/ids";
-import { fromCents, multiplyAmount, sumAmounts, toCents } from "@/lib/money";
+import { fromCents, multiplyAmount, normalizeAmount, sumAmounts, toCents } from "@/lib/money";
+import { CUSTOMER_REFUND, DISPUTE_CONCESSION } from "@/lib/requests";
 import type { ScanSource } from "@/server/ai/scanner";
 import { marketQuoteFor, resolveProduct } from "@/server/catalog";
 import { priceSignal } from "@/server/catalog/market";
@@ -46,6 +47,24 @@ export type InvoiceInput = {
   messageId: string;
   justification: string;
   sourceIds?: string[];
+  requestKey?: string;
+};
+
+/**
+ * Money going back out through an outside tool (the PayPal Agent Toolkit's create_refund or
+ * accept_dispute_claim). Leash checks it; the tool executes it and reports back.
+ */
+export type RefundInput = {
+  kind: "refund";
+  action: "create_refund" | "accept_dispute_claim";
+  /** The PayPal capture id (refund) or dispute id. */
+  reference: string;
+  /** Omitted = full refund / whatever the dispute concedes: the owner decides. */
+  amount?: string;
+  currency?: string;
+  justification: string;
+  /** Untrusted text the agent acted on (the customer's email, the chat, the ticket). */
+  sources?: { kind: "email" | "chat" | "ticket" | "page"; text: string; label?: string }[];
   requestKey?: string;
 };
 
@@ -167,6 +186,36 @@ async function buildInvoice(
   };
 }
 
+function buildRefund(input: RefundInput): Omit<Built, "cycleId"> {
+  const reference = input.reference.trim().slice(0, 64);
+  if (!/^[A-Za-z0-9-]{4,64}$/.test(reference)) throw new PaymentInputError("Invalid PayPal reference.");
+  const amount = input.amount ? normalizeAmount(input.amount) : undefined;
+  return {
+    request: {
+      kind: "refund",
+      supplierName: input.action === "accept_dispute_claim" ? DISPUTE_CONCESSION : CUSTOMER_REFUND,
+      payeeEmail: "the original payer",
+      items: [],
+      amount: amount ?? "0.00",
+      amountUnknown: !amount,
+      currency: (input.currency ?? "USD").toUpperCase(),
+      invoiceNumber: reference,
+      idempotencyKey: "",
+    },
+    sources: (input.sources ?? []).slice(0, 10).map((s, i) => ({
+      id: `ext:${i + 1}`,
+      kind:
+        s.kind === "page"
+          ? ("listing" as const)
+          : s.kind === "email"
+            ? ("email" as const)
+            : ("other" as const),
+      text: s.text.slice(0, 8000),
+      label: s.label?.slice(0, 120) ?? `the ${s.kind} the agent acted on`,
+    })),
+  };
+}
+
 async function extraSources(db: DB, workspaceId: string, ids: string[] = []): Promise<ScanSource[]> {
   const out: ScanSource[] = [];
   for (const id of ids) {
@@ -191,14 +240,16 @@ async function extraSources(db: DB, workspaceId: string, ids: string[] = []): Pr
   return out;
 }
 
-function deriveKey(runId: string | undefined, input: PurchaseInput | InvoiceInput): string {
+function deriveKey(runId: string | undefined, input: PurchaseInput | InvoiceInput | RefundInput): string {
   const basis =
     input.kind === "purchase"
       ? input.items
           .map((i) => `${i.productId}x${i.quantity}`)
           .sort()
           .join(",")
-      : input.messageId;
+      : input.kind === "refund"
+        ? `${input.action}:${input.reference}:${input.amount ?? "full"}`
+        : input.messageId;
   return `req-${createHash("sha256")
     .update(`${runId ?? "manual"}|${input.kind}|${basis}`)
     .digest("hex")
@@ -228,7 +279,7 @@ export async function submitPaymentRequest(
     agentId: string;
     runId?: string;
     agentTask: string;
-    input: PurchaseInput | InvoiceInput;
+    input: PurchaseInput | InvoiceInput | RefundInput;
     ai?: boolean;
     layers?: GuardLayers;
     paypal?: PayPalGateway;
@@ -262,12 +313,16 @@ export async function submitPaymentRequest(
   const built =
     input.kind === "purchase"
       ? await buildPurchase(db, workspaceId, input)
-      : await buildInvoice(db, workspaceId, input);
+      : input.kind === "refund"
+        ? buildRefund(input)
+        : await buildInvoice(db, workspaceId, input);
   const request: GuardRequest = { ...built.request, idempotencyKey };
   const seen = new Set(built.sources.map((s) => s.id));
   const sources = [
     ...built.sources,
-    ...(await extraSources(db, workspaceId, input.sourceIds)).filter((s) => !seen.has(s.id)),
+    ...(input.kind === "refund" ? [] : await extraSources(db, workspaceId, input.sourceIds)).filter(
+      (s) => !seen.has(s.id),
+    ),
   ];
 
   const mandate = await getActiveMandate(db, agentId);
@@ -384,10 +439,11 @@ export async function submitPaymentRequest(
       reason: reasons[0] ?? "Blocked attack",
     });
     if (change && change.to !== change.from) result.trust = change;
-  } else if (decision.verdict === "ALLOW") {
+  } else if (decision.verdict === "ALLOW" && request.kind !== "refund") {
     result.execution = await executePayment(db, requestId, { paypal });
     result.status = result.execution.ok ? "executed" : "failed";
   }
+  // An allowed refund stays "approved": the outside tool executes it and reports back.
   return result;
 }
 
@@ -421,6 +477,8 @@ export async function executePayment(
     };
   }
   if (req.status !== "approved") return { ok: false, error: `Request is ${req.status}, not approved` };
+  if (req.kind === "refund")
+    return { ok: false, error: "Refunds are executed by the outside tool, not the hold." };
 
   const fail = async (error: string) => {
     await db.update(t.paymentRequests).set({ status: "failed" }).where(eq(t.paymentRequests.id, requestId));
@@ -559,6 +617,37 @@ export async function decideApproval(
     .update(t.paymentRequests)
     .set({ status: "approved", decidedAt: now })
     .where(eq(t.paymentRequests.id, approval.requestId));
+  const [req] = await db.select().from(t.paymentRequests).where(eq(t.paymentRequests.id, approval.requestId));
+  // Refunds are executed by the outside tool once it sees the approval.
+  if (req.kind === "refund") return { status: "approved" };
   const execution = await executePayment(db, approval.requestId, { paypal });
   return { status: execution.ok ? "executed" : "failed", execution };
+}
+
+/** The outside tool reports what happened after Leash approved a refund. */
+export async function reportExternalResult(
+  db: DB,
+  { workspaceId, requestId }: { workspaceId: string; requestId: string },
+  result: { ok: boolean; paypalId?: string; error?: string },
+) {
+  const [req] = await db
+    .select()
+    .from(t.paymentRequests)
+    .where(and(eq(t.paymentRequests.id, requestId), eq(t.paymentRequests.workspaceId, workspaceId)));
+  if (!req) throw new PaymentInputError(`Unknown request ${requestId}.`);
+  if (req.kind !== "refund") throw new PaymentInputError("Only refunds are executed outside Leash.");
+  if (req.status === "executed" || req.status === "failed") return req;
+  if (req.status !== "approved") {
+    throw new PaymentInputError(`Request is ${req.status}; it can't be executed.`);
+  }
+  const [updated] = await db
+    .update(t.paymentRequests)
+    .set({
+      status: result.ok ? "executed" : "failed",
+      externalRef: result.paypalId?.slice(0, 64) ?? null,
+      decidedAt: new Date(),
+    })
+    .where(eq(t.paymentRequests.id, requestId))
+    .returning();
+  return updated;
 }

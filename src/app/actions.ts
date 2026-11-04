@@ -19,6 +19,7 @@ import { currentWorkspaceId, nextMandateVersion, workspaceBasics } from "@/serve
 import { askLedger } from "@/server/ai/ledger-query";
 import { ledgerRows } from "@/server/ledger";
 import { decideProposal, shortenLeash } from "@/server/trust/engine";
+import { createApiKey, listApiKeys, revokeApiKey } from "@/server/agents/keys";
 
 /** Server Actions. Each one re-derives the workspace and checks ownership of what it touches. */
 
@@ -167,7 +168,13 @@ export async function runAgentAction(formData: FormData): Promise<void> {
   const [running] = await db
     .select({ id: t.agentRuns.id })
     .from(t.agentRuns)
-    .where(and(eq(t.agentRuns.agentId, agent.id), inArray(t.agentRuns.status, ["running"])));
+    .where(
+      and(
+        eq(t.agentRuns.agentId, agent.id),
+        eq(t.agentRuns.origin, "leash"),
+        inArray(t.agentRuns.status, ["running"]),
+      ),
+    );
   if (running) redirect(`/app/runs/${running.id}`);
   const runId = newId("run");
   after(async () => {
@@ -250,5 +257,29 @@ export async function shortenLeashAction(formData: FormData): Promise<void> {
   const db = await getDb();
   const { agent } = await workspaceBasics(db, await currentWorkspaceId());
   await shortenLeash(db, agent.id, level as 0 | 1 | 2 | 3);
+  refresh();
+}
+
+export type ApiKeyState = { key?: string; name?: string; error?: string };
+
+/** Creates an API key for an outside agent. The key is returned once and never stored. */
+export async function createApiKeyAction(_prev: ApiKeyState, formData: FormData): Promise<ApiKeyState> {
+  const name = String(formData.get("name") ?? "").trim();
+  if (name.length < 2) return { error: "Give the agent a name, e.g. Claude Desktop." };
+  const db = await getDb();
+  const workspaceId = await currentWorkspaceId();
+  const { agent } = await workspaceBasics(db, workspaceId);
+  const existing = await listApiKeys(db, workspaceId);
+  if (existing.filter((k) => !k.revokedAt).length >= 10) {
+    return { error: "That's 10 active keys. Revoke one first." };
+  }
+  const { key } = await createApiKey(db, { workspaceId, agentId: agent.id, name });
+  refresh();
+  return { key, name };
+}
+
+export async function revokeApiKeyAction(formData: FormData): Promise<void> {
+  const db = await getDb();
+  await revokeApiKey(db, await currentWorkspaceId(), String(formData.get("keyId") ?? ""));
   refresh();
 }

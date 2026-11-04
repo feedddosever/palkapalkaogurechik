@@ -42,7 +42,7 @@ function TowerSkeleton() {
 async function Tower() {
   await connection();
   const d = await dashboard(await currentWorkspaceId());
-  const running = d.lastRun?.status === "running";
+  const running = d.leashRunning;
 
   return (
     <div className="flex flex-col gap-6">

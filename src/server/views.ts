@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, max } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { fromCents, multiplyAmount, toCents } from "@/lib/money";
+import { describeRequest } from "@/lib/requests";
 import { marketQuoteFor } from "@/server/catalog";
 import { getDb, type DB } from "@/server/db/client";
 import * as t from "@/server/db/schema";
@@ -69,7 +70,7 @@ export async function nextMandateVersion(db: DB, agentId: string): Promise<numbe
 
 export type RequestView = {
   id: string;
-  kind: "purchase" | "invoice";
+  kind: "purchase" | "invoice" | "refund";
   supplierName: string;
   payeeEmail: string;
   amount: string;
@@ -111,10 +112,7 @@ export async function recentRequests(db: DB, workspaceId: string, limit = 12): P
     amount: r.amount,
     status: r.status,
     verdict: r.verdict,
-    summary:
-      r.kind === "invoice"
-        ? `Invoice ${r.invoiceNumber ?? ""}`.trim()
-        : r.items.map((i) => `${i.quantity}× ${i.name}`).join(", "),
+    summary: describeRequest(r),
     reasons: combined.find((c) => c.requestId === r.id)?.reasons ?? [],
     createdAt: r.createdAt,
     approvalId: approvals.find((a) => a.requestId === r.id)?.id,
@@ -159,6 +157,17 @@ export async function dashboard(workspaceId: string) {
     .where(eq(t.agentRuns.agentId, agent.id))
     .orderBy(desc(t.agentRuns.startedAt))
     .limit(1);
+  const [leashRunning] = await db
+    .select({ id: t.agentRuns.id })
+    .from(t.agentRuns)
+    .where(
+      and(
+        eq(t.agentRuns.agentId, agent.id),
+        eq(t.agentRuns.origin, "leash"),
+        eq(t.agentRuns.status, "running"),
+      ),
+    )
+    .limit(1);
   const rules = await activeRules(db, agent.id);
   const [lastTrust] = await db
     .select()
@@ -201,6 +210,7 @@ export async function dashboard(workspaceId: string) {
     pending,
     requests,
     lastRun: lastRun ?? null,
+    leashRunning: Boolean(leashRunning),
     rules,
     lastTrust: lastTrust ?? null,
     proposal: await openProposal(db, agent.id),

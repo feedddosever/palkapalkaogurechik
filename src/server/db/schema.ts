@@ -275,7 +275,7 @@ export const paymentRequests = pgTable(
       .references(() => agents.id, { onDelete: "cascade" }),
     cycleId: text("cycle_id").references(() => cycles.id),
     runId: text("run_id"),
-    kind: text("kind", { enum: ["purchase", "invoice"] }).notNull(),
+    kind: text("kind", { enum: ["purchase", "invoice", "refund"] }).notNull(),
     supplierId: text("supplier_id").references(() => suppliers.id),
     supplierName: text("supplier_name").notNull(),
     payeeEmail: text("payee_email").notNull(),
@@ -293,6 +293,8 @@ export const paymentRequests = pgTable(
     verdict: text("verdict", { enum: ["ALLOW", "NEEDS_APPROVAL", "BLOCK"] }),
     /** Agent-supplied or derived; doubles as the PayPal-Request-Id so retries never double-charge. */
     idempotencyKey: text("idempotency_key").notNull(),
+    /** Set when an outside tool (PayPal Agent Toolkit) executed it: the PayPal id it reported. */
+    externalRef: text("external_ref"),
     /** Seeded historical activity (gives the trust engine a track record). */
     historical: boolean("historical").notNull().default(false),
     createdAt: createdAt(),
@@ -443,6 +445,11 @@ export const agentRuns = pgTable(
     status: text("status", { enum: ["running", "succeeded", "failed", "cancelled"] })
       .notNull()
       .default("running"),
+    /** leash = Leash's own ops agent; mcp / toolkit = an outside agent connected with an API key. */
+    origin: text("origin", { enum: ["leash", "mcp", "toolkit"] })
+      .notNull()
+      .default("leash"),
+    apiKeyId: text("api_key_id"),
     summary: text("summary"),
     startedAt: ts("started_at").notNull().defaultNow(),
     finishedAt: ts("finished_at"),
@@ -517,6 +524,33 @@ export const paypalSimIdempotency = pgTable("paypal_sim_idempotency", {
   response: jsonb("response").notNull(),
   createdAt: createdAt(),
 });
+
+// ─── Outside agents ─────────────────────────────────────────────────────────
+
+/**
+ * API keys for bring-your-own agents (MCP clients, the PayPal Agent Toolkit guard). Only a
+ * SHA-256 hash is stored; the key is shown once. A key acts as one agent in one workspace.
+ */
+export const agentApiKeys = pgTable(
+  "agent_api_keys",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    agentId: text("agent_id")
+      .notNull()
+      .references(() => agents.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** First characters of the key, to recognise it in the list. */
+    prefix: text("prefix").notNull(),
+    hash: text("hash").notNull(),
+    createdAt: createdAt(),
+    lastUsedAt: ts("last_used_at"),
+    revokedAt: ts("revoked_at"),
+  },
+  (t) => [uniqueIndex("api_keys_hash_idx").on(t.hash), index("api_keys_ws_idx").on(t.workspaceId)],
+);
 
 // ─── Reconciliation ─────────────────────────────────────────────────────────
 

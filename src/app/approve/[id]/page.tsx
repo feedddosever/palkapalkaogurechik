@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatMoney } from "@/lib/format";
+import { describeRequest } from "@/lib/requests";
 import { layerChip, orderLayers } from "@/lib/layers";
 import { priceSignal } from "@/server/catalog/market";
 import { categoryLabel } from "@/server/guard/rule-card";
@@ -100,6 +101,8 @@ async function Approval({ params }: { params: PageProps<"/approve/[id]">["params
               <p>
                 Invoice {r.invoiceNumber}, payable to {r.payeeEmail}
               </p>
+            ) : r.kind === "refund" ? (
+              <p>{describeRequest(r)}, requested by an outside agent through the PayPal Agent Toolkit</p>
             ) : (
               <ul className="flex flex-col gap-1">
                 {r.items.map((i) => (

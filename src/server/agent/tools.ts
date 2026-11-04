@@ -223,6 +223,8 @@ async function run(name: string, input: ToolInput, c: ToolContext): Promise<unkn
     }
     case "request_purchase":
     case "pay_invoice": {
+      // Outside agents (MCP) may send their own idempotency key; Leash's agent relies on the run id.
+      const requestKey = input.idempotency_key ? String(input.idempotency_key).slice(0, 100) : undefined;
       const input2 =
         name === "request_purchase"
           ? {
@@ -233,11 +235,13 @@ async function run(name: string, input: ToolInput, c: ToolContext): Promise<unkn
               })),
               justification: String(input.justification ?? ""),
               sourceIds: (input.source_ids as string[]) ?? [],
+              requestKey,
             }
           : {
               kind: "invoice" as const,
               messageId: String(input.message_id ?? ""),
               justification: String(input.justification ?? ""),
+              requestKey,
             };
       const r = await submitPaymentRequest(db, {
         workspaceId,
