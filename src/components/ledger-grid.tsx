@@ -393,7 +393,7 @@ export function LedgerGrid({ rows, aiLive }: { rows: LedgerRow[]; aiLive: boolea
     startAsking(async () => {
       try {
         const res = await askLedgerAction(q, schema);
-        api.setState(res.state as GridState);
+        if (Object.keys(res.state).length) api.setState(res.state as GridState);
         setAnswer({ text: res.explanation, source: res.source });
       } catch {
         setAnswer({ text: "Couldn't answer that one. Try rephrasing.", source: "offline" });

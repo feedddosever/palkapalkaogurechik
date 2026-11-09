@@ -128,7 +128,7 @@ async function LabRun({ params }: { params: PageProps<"/lab/runs/[id]">["params"
               <ButtonLink href="/lab" size="sm">
                 Try another attack
               </ButtonLink>
-              <ButtonLink href="/onboarding" size="sm" variant="secondary">
+              <ButtonLink href="/demo" prefetch={false} size="sm" variant="secondary">
                 Set up Leash for a café
               </ButtonLink>
             </div>

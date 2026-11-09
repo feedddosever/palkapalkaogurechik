@@ -337,6 +337,12 @@ export class SandboxPayPal implements PayPalGateway {
     });
   }
 
+  /** Health check: can we get an OAuth token from the sandbox right now? */
+  async ping(): Promise<boolean> {
+    await this.accessToken();
+    return true;
+  }
+
   // ─── REST plumbing ────────────────────────────────────────────────────────
 
   private async accessToken(): Promise<string> {

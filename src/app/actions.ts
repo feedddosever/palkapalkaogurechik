@@ -20,6 +20,7 @@ import { askLedger } from "@/server/ai/ledger-query";
 import { ledgerRows } from "@/server/ledger";
 import { decideProposal, shortenLeash } from "@/server/trust/engine";
 import { createApiKey, listApiKeys, revokeApiKey } from "@/server/agents/keys";
+import { allowAiAction } from "@/server/judge";
 
 /** Server Actions. Each one re-derives the workspace and checks ownership of what it touches. */
 
@@ -45,6 +46,9 @@ export async function compileRulesAction(_prev: CompileState, formData: FormData
 
   const db = await getDb();
   const workspaceId = await currentWorkspaceId();
+  if (!allowAiAction(workspaceId)) {
+    return { status: "error", message: "That's a lot of compiles in an hour. Try again in a little while." };
+  }
   const { agent } = await workspaceBasics(db, workspaceId);
   const suppliers = await db.select().from(t.suppliers).where(eq(t.suppliers.workspaceId, workspaceId));
 
@@ -226,6 +230,13 @@ export type LedgerAnswerState = {
 /** "Ask the ledger": the browser sends the grid's own state schema (AG Grid AI Toolkit). */
 export async function askLedgerAction(question: string, gridSchema: unknown): Promise<LedgerAnswerState> {
   const workspaceId = await currentWorkspaceId();
+  if (!allowAiAction(workspaceId)) {
+    return {
+      state: {},
+      explanation: "That's a lot of questions in an hour. Try again in a little while.",
+      source: "offline",
+    };
+  }
   const rows = await ledgerRows(workspaceId);
   const uniq = (xs: string[]) => [...new Set(xs)].sort();
   const answer = await askLedger(String(question ?? ""), gridSchema, {

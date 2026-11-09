@@ -27,14 +27,34 @@ const spkiOf = (k: KeyObject) =>
 
 const globalForKeys = globalThis as unknown as { __leashSigningKey?: Promise<SigningKey> };
 
+/** DER prefix of an Ed25519 PKCS#8 private key; the 32-byte seed follows it. */
+const ED25519_PKCS8_PREFIX = Buffer.from("302e020100300506032b657004220420", "hex");
+
+/**
+ * RECEIPT_SIGNING_KEY is either a base64 PKCS#8 Ed25519 key (`npm run keys:generate`) or any
+ * long random secret (e.g. one a host generates for you), from which a stable key is derived.
+ */
+export function privateKeyFromSecret(secret: string): KeyObject {
+  try {
+    const key = createPrivateKey({ key: Buffer.from(secret, "base64"), format: "der", type: "pkcs8" });
+    if (key.asymmetricKeyType === "ed25519") return key;
+  } catch {
+    /* not a PKCS#8 key: derive one */
+  }
+  if (secret.length < 32)
+    throw new Error("RECEIPT_SIGNING_KEY must be a PKCS#8 key or a secret of 32+ characters.");
+  const seed = createHash("sha256").update(`leash-receipts|${secret}`).digest();
+  return createPrivateKey({
+    key: Buffer.concat([ED25519_PKCS8_PREFIX, seed]),
+    format: "der",
+    type: "pkcs8",
+  });
+}
+
 export function getSigningKey(db: DB): Promise<SigningKey> {
   globalForKeys.__leashSigningKey ??= (async () => {
     if (env.RECEIPT_SIGNING_KEY) {
-      const privateKey = createPrivateKey({
-        key: Buffer.from(env.RECEIPT_SIGNING_KEY, "base64"),
-        format: "der",
-        type: "pkcs8",
-      });
+      const privateKey = privateKeyFromSecret(env.RECEIPT_SIGNING_KEY);
       const publicKeySpki = spkiOf(privateKey);
       const kid = kidFor(publicKeySpki);
       await db.insert(signingKeys).values({ kid, publicKeySpki, source: "env" }).onConflictDoNothing();

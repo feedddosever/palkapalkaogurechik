@@ -48,4 +48,14 @@ describe("env", () => {
   it("rejects invalid values with a readable message", () => {
     expect(() => parseEnv({ PAYPAL_MODE: "prod" })).toThrow(/PAYPAL_MODE/);
   });
+
+  it("uses Render's public URL when APP_URL isn't set", () => {
+    expect(parseEnv({ RENDER_EXTERNAL_URL: "https://leash.onrender.com" }).APP_URL).toBe(
+      "https://leash.onrender.com",
+    );
+    expect(
+      parseEnv({ APP_URL: "https://leash.example", RENDER_EXTERNAL_URL: "https://leash.onrender.com" })
+        .APP_URL,
+    ).toBe("https://leash.example");
+  });
 });

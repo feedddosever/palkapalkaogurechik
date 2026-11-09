@@ -1,0 +1,75 @@
+# Render Blueprint for Leash: Dashboard → New → Blueprint → pick this repo.
+# Render asks for the `sync: false` values once, when the Blueprint is created; all are optional
+# (without keys Leash runs on its PayPal simulator and offline AI fallbacks).
+services:
+  - type: web
+    name: leash
+    runtime: node
+    plan: 1c-2g
+    region: oregon
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npm run db:migrate
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: leash-db
+          property: connectionString
+      # Ed25519 receipt-signing key, derived from this generated secret (stable across deploys).
+      - key: RECEIPT_SIGNING_KEY
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: LAB_DAILY_BUDGET_USD
+        value: "3"
+      # PayPal sandbox app (developer.paypal.com → Apps & Credentials, Sandbox).
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      # The sandbox test buyer judges log in with to approve the hold (shown on the onboarding page).
+      - key: JUDGE_BUYER_EMAIL
+        sync: false
+      - key: JUDGE_BUYER_PASSWORD
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CHANNEL3_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_AG_GRID_LICENSE_KEY
+        sync: false
+
+  # Hourly: reauthorize holds after PayPal's honor period, renew ended weeks, reconcile.
+  - type: cron
+    name: leash-cycles
+    runtime: node
+    plan: 0.5c-512mb
+    region: oregon
+    schedule: "17 * * * *"
+    buildCommand: echo "no build needed"
+    startCommand: node scripts/cron-ping.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: LEASH_INTERNAL
+        fromService:
+          name: leash
+          type: web
+          property: hostport
+      - key: CRON_SECRET
+        fromService:
+          name: leash
+          type: web
+          envVarKey: CRON_SECRET
+
+databases:
+  - name: leash-db
+    plan: 256mb
+    region: oregon
+    postgresMajorVersion: "17"

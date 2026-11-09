@@ -16,6 +16,7 @@ const optional = z.preprocess(
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  // Public base URL. On Render, RENDER_EXTERNAL_URL is used when APP_URL isn't set.
   APP_URL: z.preprocess(
     (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
     z.url().default("http://localhost:3000"),
@@ -54,6 +55,11 @@ const schema = z.object({
   /** Bearer token for POST /api/cron/cycles (unset = the endpoint is disabled). */
   CRON_SECRET: optional,
 
+  // Judge mode: the PayPal sandbox test buyer judges log in with to approve the hold
+  // (sandbox-only credentials, shown on the onboarding page on purpose).
+  JUDGE_BUYER_EMAIL: optional,
+  JUDGE_BUYER_PASSWORD: optional,
+
   // Attack Lab (public): on = normal; offline = never call Claude from the lab; off = kill switch.
   LAB_MODE: z.enum(["on", "offline", "off"]).default("on"),
   /** Daily cap on estimated Claude spend from lab runs; above it the lab runs offline. */
@@ -65,7 +71,11 @@ const schema = z.object({
 export type Env = z.infer<typeof schema>;
 
 export function parseEnv(source: Record<string, string | undefined>): Env {
-  const result = schema.safeParse(source);
+  const withDefaults =
+    source.APP_URL?.trim() || !source.RENDER_EXTERNAL_URL
+      ? source
+      : { ...source, APP_URL: source.RENDER_EXTERNAL_URL };
+  const result = schema.safeParse(withDefaults);
   if (!result.success) {
     const issues = result.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
     throw new Error(`Invalid environment configuration:\n${issues}`);

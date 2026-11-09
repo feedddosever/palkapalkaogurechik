@@ -50,10 +50,10 @@ export default function Home() {
               hijacked agents before money moves.
             </p>
             <div className="flex flex-wrap gap-3">
-              <ButtonLink href="/onboarding" size="lg">
+              <ButtonLink href="/demo" prefetch={false} size="lg">
                 Try it with Bean There Café
               </ButtonLink>
-              <ButtonLink href="/app" size="lg" variant="secondary">
+              <ButtonLink href="/demo?to=app" prefetch={false} size="lg" variant="secondary">
                 Open the control tower
               </ButtonLink>
               <ButtonLink href="/lab" size="lg" variant="ghost">

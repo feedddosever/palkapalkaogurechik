@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { CircleAlert } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { JudgeHint } from "@/components/judge/judge-hint";
 import { RulesForm } from "@/components/rules-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDb } from "@/server/db/client";
@@ -70,6 +71,9 @@ async function OnboardingBody({ searchParams }: { searchParams: PageProps<"/onbo
         are her rules; change anything you like.
       </p>
       <RulesForm defaultText={rules?.ownerText ?? DEFAULT_OWNER_TEXT} mode="onboarding" />
+      <Suspense fallback={null}>
+        <JudgeHint />
+      </Suspense>
     </div>
   );
 }
