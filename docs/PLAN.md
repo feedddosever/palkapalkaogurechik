@@ -688,6 +688,13 @@ request from it gets blocked.
 
 **Done when:** the hosted URL works from a fresh browser; a new judge completes the core story in under 2 minutes.
 
+- **Prep done (deploy pending):** `render.yaml` (web `1c-2g` with pre-deploy migrations and `/api/health`, Postgres
+  `256mb`, hourly cron calling the CRON_SECRET-protected endpoint over the private network; generated receipt and
+  cron secrets; optional keys prompted once). `/demo` is always dynamic (fixed an intermittent build crash) and
+  rate limited; landing/lab buttons create a fresh café; onboarding shows the sandbox test buyer
+  (`JUDGE_BUYER_EMAIL`/`JUDGE_BUYER_PASSWORD`); demo strip with "Reset demo"; PayPal-sandbox outage banner; security
+  headers; per-workspace limits on AI-backed actions; 404 and error pages.
+
 ### Step 18: Hardening & polish
 
 **Build:** Playwright e2e for the demo story + Attack Lab; copy pass; accessibility pass; performance (guard p95
@@ -706,6 +713,10 @@ request from it gets blocked.
 - Repo About section: description, website, topics, MIT license visible.
 
 **Done when:** someone new can understand, run and evaluate the project from the README alone.
+
+- **Drafted:** README for judges, `docs/ARCHITECTURE.md`, `docs/SUBMISSION.md` (TODOs: live URL, video),
+  `docs/VIDEO.md` (script for Step 20). Screenshots in `docs/images` were taken offline ("judge: offline"): retake
+  once Claude and the PayPal sandbox are live, and replace the README status note after Step 13.
 
 ### Step 20: Demo video
 
