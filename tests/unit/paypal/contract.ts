@@ -170,9 +170,11 @@ export function paypalContract(setup: ContractSetup) {
       ],
     };
     const p1 = await gateway.createPayout(input);
-    const p2 = await gateway.createPayout(input);
     expect(p1.batchId).toBeTruthy();
-    expect(p2.batchId).toBe(p1.batchId);
+    // Verified on the PayPal sandbox: a reused sender_batch_id is rejected, not replayed.
+    const retry = await gateway.createPayout(input).catch((e: unknown) => e);
+    expect(retry).toBeInstanceOf(PayPalError);
+    expect((retry as PayPalError).code).toBe("DUPLICATE_PAYOUT");
     expect((await gateway.getPayout(p1.batchId)).items[0].amount.value).toBe("84.00");
   });
 

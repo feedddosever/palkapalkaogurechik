@@ -3,7 +3,6 @@ import {
   CheckoutPaymentIntent,
   Client,
   Environment,
-  LogLevel,
   OrdersController,
   PaymentsController,
   PaypalExperienceUserAction,
@@ -19,6 +18,7 @@ import {
 import { normalizeAmount } from "@/lib/money";
 import {
   AUTHORIZATION_VALID_DAYS,
+  duplicatePayout,
   HONOR_PERIOD_DAYS,
   PayPalError,
   type AuthorizationInfo,
@@ -60,11 +60,6 @@ export class SandboxPayPal implements PayPalGateway {
       },
       environment: Environment.Sandbox,
       timeout: 20_000,
-      logging: {
-        logLevel: LogLevel.Warn,
-        logRequest: { logBody: false },
-        logResponse: { logHeaders: false },
-      },
     });
     this.orders = new OrdersController(client);
     this.payments = new PaymentsController(client);
@@ -247,21 +242,32 @@ export class SandboxPayPal implements PayPalGateway {
   // ─── payouts (REST) ───────────────────────────────────────────────────────
 
   async createPayout(input: PayoutInput): Promise<PayoutInfo> {
-    const { body, debugId: dbg } = await this.rest<PayoutResponse>("POST", "/v1/payments/payouts", {
-      // PayPal-Request-Id makes a retried batch replay instead of paying twice.
-      requestId: input.senderBatchId,
-      body: {
-        sender_batch_header: { sender_batch_id: input.senderBatchId, email_subject: input.emailSubject },
-        items: input.items.map((i) => ({
-          recipient_type: "EMAIL",
-          receiver: i.receiver,
-          note: i.note,
-          sender_item_id: i.senderItemId,
-          amount: { value: normalizeAmount(i.amount), currency: i.currency },
-        })),
-      },
-    });
-    return toPayout(body, input, dbg);
+    try {
+      const { body, debugId: dbg } = await this.rest<PayoutResponse>("POST", "/v1/payments/payouts", {
+        // Verified on the sandbox: a reused sender_batch_id is rejected (never paid twice), even
+        // with the same PayPal-Request-Id; it is not replayed. Leash maps that to DUPLICATE_PAYOUT.
+        requestId: input.senderBatchId,
+        body: {
+          sender_batch_header: { sender_batch_id: input.senderBatchId, email_subject: input.emailSubject },
+          items: input.items.map((i) => ({
+            recipient_type: "EMAIL",
+            receiver: i.receiver,
+            note: i.note,
+            sender_item_id: i.senderItemId,
+            amount: { value: normalizeAmount(i.amount), currency: i.currency },
+          })),
+        },
+      });
+      return toPayout(body, input, dbg);
+    } catch (err) {
+      if (
+        err instanceof PayPalError &&
+        /sender_batch_id already exists/i.test(`${err.code} ${err.message}`)
+      ) {
+        throw duplicatePayout(input.senderBatchId);
+      }
+      throw err;
+    }
   }
 
   async getPayout(batchId: string): Promise<PayoutInfo> {

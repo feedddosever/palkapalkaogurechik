@@ -223,7 +223,37 @@ export async function reconcileWorkspace(
   }: Opts & { days?: number; transactions?: TransactionSummary[] } = {},
 ) {
   const rangeStart = new Date(now.getTime() - days * DAY);
-  const txns = transactions ?? (await paypal.searchTransactions({ startDate: rangeStart, endDate: now }));
+  let txns: TransactionSummary[];
+  try {
+    txns = transactions ?? (await paypal.searchTransactions({ startDate: rangeStart, endDate: now }));
+  } catch (err) {
+    // Typically NOT_AUTHORIZED: the PayPal app doesn't have the Transaction Search permission yet.
+    const [row] = await db
+      .insert(t.reconciliations)
+      .values({
+        id: newId("rcn"),
+        workspaceId,
+        mode: paypal.mode,
+        rangeStart,
+        rangeEnd: now,
+        checked: 0,
+        matched: 0,
+        pending: 0,
+        issues: [
+          {
+            kind: "search_unavailable",
+            paypalId: "",
+            note:
+              err instanceof PayPalError && err.code === "NOT_AUTHORIZED"
+                ? "PayPal's Transaction Search isn't enabled for this PayPal app yet, so Leash can't compare its records with PayPal's."
+                : `PayPal's Transaction Search didn't answer (${err instanceof PayPalError ? err.code : "network error"}).`,
+          },
+        ],
+        createdAt: now,
+      })
+      .returning();
+    return row;
+  }
   const ours = await db
     .select()
     .from(t.paypalOperations)

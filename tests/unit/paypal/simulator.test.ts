@@ -80,7 +80,7 @@ describe("simulator specifics", () => {
       await codeOf(
         sim.reauthorize(auth.authorizationId, { amount: "100.00", currency: "USD", requestId: unique() }),
       ),
-    ).toBe("REAUTHORIZE_TOO_SOON");
+    ).toBe("REAUTHORIZATION_TOO_SOON");
     now = new Date("2026-11-09T12:00:00Z");
     const fresh = await sim.reauthorize(auth.authorizationId, {
       amount: "100.00",
@@ -202,7 +202,7 @@ describe("simulator specifics", () => {
           invoiceId: inv,
         }),
       ),
-    ).toBe("DUPLICATE_INVOICE_ID");
+    ).toBe("DUPLICATE_TRANSACTION");
     for (let i = 0; i < 9; i++)
       await sim.capture(auth.authorizationId, {
         amount: "1.00",

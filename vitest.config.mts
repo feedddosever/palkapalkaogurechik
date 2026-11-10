@@ -8,7 +8,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/unit/**/*.test.ts", "tests/sandbox/**/*.test.ts", "src/**/*.test.ts"],
-    env: { PGLITE_DIR: "memory://" },
+    // Unit tests always use the PayPal simulator, even with sandbox keys in the environment
+    // (tests/sandbox talks to the sandbox client directly).
+    env: { PGLITE_DIR: "memory://", PAYPAL_MODE: "sim" },
     testTimeout: 20_000,
     coverage: {
       provider: "v8",

@@ -552,7 +552,14 @@ export async function executePayment(
           ],
         }),
       (p) => ({ paypalId: p.batchId, status: p.status, debugId: p.debugId }),
-    );
+    ).catch((err: unknown) => {
+      // PayPal rejects a reused sender_batch_id: this exact payout already went out (a retry after
+      // a crash between PayPal and our database). It was paid once, so carry on as paid.
+      if (err instanceof PayPalError && err.code === "DUPLICATE_PAYOUT") {
+        return { batchId: `pay-${req.id}`, status: "SUCCESS" as const };
+      }
+      throw err;
+    });
     await db
       .update(t.paymentRequests)
       .set({ status: "executed", executedAt: new Date() })

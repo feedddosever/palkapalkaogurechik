@@ -82,8 +82,11 @@ The same `PayPalGateway` interface has two implementations: the **sandbox** clie
 **simulator** that follows PayPal's rules (honor period, 29-day validity, capture limits, one reauthorization,
 idempotent replays). A shared contract test suite runs against both, so the demo works with zero keys.
 
-> **Status:** the full story runs end to end on the simulator; the run against the PayPal sandbox follows as soon as
-> the sandbox credentials are in place, and this note will be replaced with what it showed.
+> **Verified on the PayPal sandbox:** the whole demo story runs on real sandbox money (an automated browser test,
+> `tests/e2e/sandbox-flow.spec.ts`): the test buyer approves the $500 hold in PayPal's checkout, purchases are partial
+> captures from that one authorization, suppliers are paid with Payouts, a retried capture replays instead of charging
+> twice, and at week's end the remainder is voided and next week's hold is authorized from the saved PayPal wallet
+> with no buyer present. `npm run spike:paypal` re-runs the low-level checks.
 
 ## How AI is used
 

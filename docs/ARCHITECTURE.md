@@ -90,6 +90,24 @@ ids. It's canonicalized (RFC 8785-style), hashed with SHA-256, chained to the ag
 with Ed25519. Public keys are published at `/.well-known/leash-keys.json`; `/verify/{id}` checks the hash, the
 signature and the chain.
 
+## Verified on the PayPal sandbox
+
+`scripts/spike-paypal.ts` (`npm run spike:paypal`) answers what the simulator could only assume, through Leash's own
+sandbox client, with the buyer approving in PayPal's checkout:
+
+| Question                                                        | Sandbox answer                                                                                                            |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Several partial captures on one PayPal-wallet authorization     | Yes. The authorization reads `PARTIALLY_CAPTURED` in between                                                              |
+| Retried capture with the same `PayPal-Request-Id`               | Replayed: the same capture id, no second charge                                                                           |
+| Reused `invoice_id` on a capture                                | Rejected: `DUPLICATE_TRANSACTION` (422)                                                                                   |
+| Reauthorize inside the 3-day honor period                       | Rejected: `REAUTHORIZATION_TOO_SOON` (allowed once, day 4 to day 29)                                                      |
+| Void after partial captures; capture after the void             | Void works; a later capture fails with `AUTHORIZATION_VOIDED`                                                             |
+| Vaulted wallet: a merchant-initiated order with no buyer        | Authorizes immediately (`CREATED`)                                                                                        |
+| Reused payout `sender_batch_id` (even with the same request id) | Rejected (400, "already exists"), not replayed. Leash maps it to `DUPLICATE_PAYOUT` and treats the payout as already sent |
+| Transaction Search                                              | Needs the Transaction Search permission on the PayPal app (403 without)                                                   |
+
+The simulator was changed to match each of these.
+
 ## Simulator
 
 The simulator implements the same gateway interface and persists its state, following PayPal's documented

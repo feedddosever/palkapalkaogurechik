@@ -50,7 +50,7 @@ describe.skipIf(!live)("PayPal sandbox (live)", () => {
     expect((err as PayPalError).code).toBe("ORDER_NOT_APPROVED");
   });
 
-  it("sends a payout and replays it for the same sender batch id", async () => {
+  it("sends a payout and refuses to pay the same sender batch id twice", async () => {
     const gateway = pp();
     const receiver = process.env.PAYPAL_SANDBOX_SUPPLIER_EMAIL ?? "northside-roasters-sandbox@example.com";
     const input = {
@@ -62,7 +62,8 @@ describe.skipIf(!live)("PayPal sandbox (live)", () => {
     };
     const first = await gateway.createPayout(input);
     expect(first.batchId).toBeTruthy();
-    const replay = await gateway.createPayout(input);
-    expect(replay.batchId).toBe(first.batchId);
+    const again = await gateway.createPayout(input).catch((e: unknown) => e);
+    expect(again).toBeInstanceOf(PayPalError);
+    expect((again as PayPalError).code).toBe("DUPLICATE_PAYOUT");
   });
 });

@@ -29,7 +29,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 10  | Ledger on AG Grid (+ natural-language queries)                                  | AG Grid license (optional)        | ✅     |
 | 11  | Autonomy levels & trust engine                                                  | —                                 | ✅     |
 | 12  | Attack Lab                                                                      | —                                 | ✅     |
-| 13  | Go live on PayPal sandbox (**key gate**)                                        | PayPal sandbox app                | ⬜     |
+| 13  | Go live on PayPal sandbox (**key gate**)                                        | PayPal sandbox app                | ✅     |
 | 14  | Allowance cycle jobs (void, reauthorize, renew, reconcile)                      | —                                 | ✅     |
 | 15  | LeashBench (measured security results)                                          | Anthropic key                     | ⬜     |
 | 16  | Bring-your-own-agent: Leash MCP server + Agent Toolkit guard                    | —                                 | ✅     |
@@ -585,7 +585,7 @@ eligibility math.
   10 minutes (hashed IP, `LAB_RUNS_PER_CLIENT`), 2 real-agent runs per hour, 120 runs per hour overall;
   `LAB_MODE=on|offline|off`; `LAB_DAILY_BUDGET_USD` (estimated Claude spend) drops the lab to offline when reached.
 
-### Step 13: Go live on PayPal sandbox (key gate)
+### Step 13: Go live on PayPal sandbox (key gate) ✅
 
 **Needs:** PayPal Developer sandbox app credentials (client ID + secret) added as environment secrets.
 **Build**
@@ -610,6 +610,16 @@ eligibility math.
   5. Whether `invoice_id` uniqueness is enforced on captures for this sandbox account
 
 **Done when:** the full demo story runs on real sandbox money, and the IDs are visible in the sandbox accounts.
+
+- **As built:** `scripts/spike-paypal.ts` (`npm run spike:paypal`) answered all five open questions on the sandbox
+  (table in `docs/ARCHITECTURE.md`): several partial captures work; capture retries replay; reused `invoice_id` →
+  `DUPLICATE_TRANSACTION`; early reauthorize → `REAUTHORIZATION_TOO_SOON`; void after captures works; a vaulted
+  wallet authorizes merchant-initiated with no buyer; a reused payout `sender_batch_id` is rejected (mapped to
+  `DUPLICATE_PAYOUT`, treated as already sent). The simulator now matches. `tests/e2e/sandbox-flow.spec.ts`
+  (opt-in, `E2E_SANDBOX=1`) runs the whole story on sandbox money in ~40 s, buyer approval included. Unit and
+  default e2e tests pin `PAYPAL_MODE=sim`. Transaction Search returns 403 until the permission is enabled on the
+  PayPal app; reconciliation shows that plainly instead of failing. Webhooks were not built (cut: the app polls
+  nothing and learns every result synchronously from the API).
 
 ### Step 14: Allowance cycle jobs ✅
 

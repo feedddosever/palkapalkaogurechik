@@ -46,7 +46,8 @@ async function Reconciliation() {
   await connection();
   const workspaceId = await currentWorkspaceId();
   const r = await latestReconciliation(await getDb(), workspaceId);
-  const clean = r ? r.issues.length === 0 : null;
+  const unavailable = r?.issues.find((i) => i.kind === "search_unavailable");
+  const clean = r && !unavailable ? r.issues.length === 0 : null;
   return (
     <Card role="region" aria-label="Reconciliation with PayPal">
       <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -63,19 +64,23 @@ async function Reconciliation() {
             <p className="font-medium">
               {!r
                 ? "Not reconciled with PayPal yet"
-                : clean
-                  ? `Reconciled with PayPal: ${r.matched} of ${r.checked} payments match, 0 issues`
-                  : `Reconciled with PayPal: ${r.issues.length} issue${r.issues.length === 1 ? "" : "s"} to look at`}
+                : unavailable
+                  ? "Couldn't reconcile with PayPal yet"
+                  : clean
+                    ? `Reconciled with PayPal: ${r.matched} of ${r.checked} payments match, 0 issues`
+                    : `Reconciled with PayPal: ${r.issues.length} issue${r.issues.length === 1 ? "" : "s"} to look at`}
             </p>
             <p className="text-muted text-sm">
-              {r
-                ? `Every capture, payout and refund Leash recorded in the last 7 days, checked against PayPal's Transaction Search on ${r.createdAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC.`
-                : "Leash checks every capture, payout and refund it made against PayPal's own Transaction Search."}
+              {unavailable
+                ? unavailable.note
+                : r
+                  ? `Every capture, payout and refund Leash recorded in the last 7 days, checked against PayPal's Transaction Search on ${r.createdAt.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })} UTC.`
+                  : "Leash checks every capture, payout and refund it made against PayPal's own Transaction Search."}
               {r?.pending
                 ? ` ${r.pending} recent payment${r.pending === 1 ? " is" : "s are"} not indexed by PayPal yet.`
                 : ""}
             </p>
-            {r && r.issues.length ? (
+            {r && !unavailable && r.issues.length ? (
               <ul className="mt-1 flex flex-col gap-1 text-sm">
                 {r.issues.slice(0, 5).map((i) => (
                   <li key={`${i.kind}-${i.paypalId}`} className="flex flex-wrap items-center gap-2">

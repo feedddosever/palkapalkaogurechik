@@ -175,3 +175,12 @@ export class PayPalError extends Error {
 
 export const HONOR_PERIOD_DAYS = 3;
 export const AUTHORIZATION_VALID_DAYS = 29;
+
+/** PayPal rejects a reused payout sender_batch_id (verified on the sandbox): it was already sent. */
+export function duplicatePayout(senderBatchId: string): PayPalError {
+  return new PayPalError(
+    "DUPLICATE_PAYOUT",
+    `A payout batch with sender_batch_id ${senderBatchId} was already sent.`,
+    400,
+  );
+}

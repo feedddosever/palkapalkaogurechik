@@ -555,7 +555,7 @@ export const agentApiKeys = pgTable(
 // ─── Reconciliation ─────────────────────────────────────────────────────────
 
 export type ReconciliationIssue = {
-  kind: "missing_in_paypal" | "amount_mismatch" | "unknown_in_paypal";
+  kind: "missing_in_paypal" | "amount_mismatch" | "unknown_in_paypal" | "search_unavailable";
   op?: string;
   paypalId: string;
   ours?: string;

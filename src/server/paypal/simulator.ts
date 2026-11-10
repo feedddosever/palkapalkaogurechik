@@ -6,6 +6,7 @@ import { paypalSimIdempotency, paypalSimObjects } from "@/server/db/schema";
 import {
   AUTHORIZATION_VALID_DAYS,
   HONOR_PERIOD_DAYS,
+  duplicatePayout,
   PayPalError,
   type AuthorizationInfo,
   type AuthorizationStatus,
@@ -28,7 +29,8 @@ import {
  *  - authorizations: 3-day honor period, valid for 29 days (AUTHORIZATION_EXPIRED)
  *  - several partial captures with final_capture=false; total ≤ min(115%, +$75) of the hold
  *  - a partially captured authorization can be voided (releases the rest)
- *  - invoice_id must be unique per capture (DUPLICATE_INVOICE_ID)
+ *  - invoice_id must be unique per capture (DUPLICATE_TRANSACTION, as the sandbox returns)
+ *  - a repeated payout sender_batch_id is rejected (DUPLICATE_PAYOUT), not replayed
  *  - one reauthorization, only after the honor period
  *  - PayPal-Request-Id replays the original response instead of repeating the operation
  *
@@ -257,7 +259,7 @@ export class SimulatedPayPal implements PayPalGateway {
         );
       }
       if (input.invoiceId && (await this.invoiceIdUsed(input.invoiceId))) {
-        throw new PayPalError("DUPLICATE_INVOICE_ID", `Invoice ID ${input.invoiceId} was already used.`, 422);
+        throw new PayPalError("DUPLICATE_TRANSACTION", "Duplicate invoice Id detected.", 422);
       }
 
       const capture: SimCapture = {
@@ -319,7 +321,11 @@ export class SimulatedPayPal implements PayPalGateway {
         );
       }
       if (this.now() < new Date(auth.honorUntil)) {
-        throw new PayPalError("REAUTHORIZE_TOO_SOON", "Reauthorize only after the 3-day honor period.", 422);
+        throw new PayPalError(
+          "REAUTHORIZATION_TOO_SOON",
+          "A reauthorization is only allowed once from Day 4 to Day 29 since the date of the original authorization.",
+          422,
+        );
       }
       assertPositive(input.amount);
       if (toCents(input.amount) > Math.round(toCents(auth.amount) * 1.15)) {
@@ -382,7 +388,12 @@ export class SimulatedPayPal implements PayPalGateway {
 
   // ─── payouts ──────────────────────────────────────────────────────────────
 
-  createPayout(input: PayoutInput): Promise<PayoutInfo> {
+  async createPayout(input: PayoutInput): Promise<PayoutInfo> {
+    // Like the sandbox: a sender_batch_id can be used once; a repeat is rejected, not replayed.
+    const db = await this.db();
+    const key = `payout:${input.senderBatchId}`;
+    const [used] = await db.select().from(paypalSimIdempotency).where(eq(paypalSimIdempotency.key, key));
+    if (used) throw duplicatePayout(input.senderBatchId);
     return this.idempotent("payout", input.senderBatchId, async () => {
       if (input.items.length === 0)
         throw new PayPalError("VALIDATION_ERROR", "A payout needs at least one item.", 400);
