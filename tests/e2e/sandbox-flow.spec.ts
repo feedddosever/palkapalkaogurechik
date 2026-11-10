@@ -19,10 +19,10 @@ async function approveInPayPal(page: Page, appOrigin: string) {
   if (await email.isVisible().catch(() => false)) {
     await email.fill(buyer.email);
     const next = page.locator("#btnNext");
-    if (await next.isVisible().catch(() => false)) await next.click();
+    if (await next.isVisible().catch(() => false)) await next.click({ timeout: 10_000 });
     await page.locator("#password").waitFor({ timeout: 20_000 });
     await page.locator("#password").fill(buyer.password);
-    await page.locator("#btnLogin").click();
+    await page.locator("#btnLogin").click({ timeout: 10_000 });
   }
   const deadline = Date.now() + 90_000;
   while (!page.url().startsWith(appOrigin) && Date.now() < deadline) {
@@ -34,7 +34,8 @@ async function approveInPayPal(page: Page, appOrigin: string) {
     ]) {
       const b = page.locator(sel).first();
       if (await b.isVisible().catch(() => false)) {
-        await b.click().catch(() => undefined);
+        // Bounded: PayPal re-renders these buttons, and an unbounded click can stall the loop.
+        await b.click({ timeout: 5_000 }).catch(() => undefined);
         break;
       }
     }
