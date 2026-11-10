@@ -182,10 +182,10 @@ live:
 | `npm run mcp:stdio`                          | stdio MCP bridge for Claude Desktop (needs `LEASH_API_KEY`) |
 | `npm run keys:generate`                      | A receipt-signing key for production                        |
 
-**Deploy:** [`render.yaml`](render.yaml) creates the web service, Postgres and an hourly cron job on paid instance
-types (Render needs a payment method on file; hackathon credits are used first). With no card, set the Blueprint
-Path to [`render-free.yaml`](render-free.yaml): free web service and database, no cron job (the web service sleeps
-when idle and the free database expires after 30 days). Every key is optional.
+**Deploy:** [`render-free.yaml`](render-free.yaml) runs Leash on Render's free tier (web service + free Postgres; no
+card needed): the web service sleeps when idle and the free database expires after 30 days. [`render.yaml`](render.yaml)
+is the paid setup (always on, plus an hourly cron job; Render needs a payment method on file). Pick the file with the
+Blueprint Path field. Every key is optional.
 
 ## Quality
 
