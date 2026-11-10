@@ -187,6 +187,8 @@ live:
 | `npm run typecheck` / `npm run lint`         | Static checks                                               |
 | `npm run db:generate` / `npm run db:migrate` | Create / apply database migrations                          |
 | `npm run jobs:cycles`                        | Allowance scheduler: reauthorize, renew, reconcile          |
+| `npm run bench`                              | LeashBench: the guard as rules only, AI only, and layered   |
+| `npm run capture -- --shots` / `--video`     | README screenshots / raw demo-video clips (Playwright)      |
 | `npm run mcp:stdio`                          | stdio MCP bridge for Claude Desktop (needs `LEASH_API_KEY`) |
 | `npm run keys:generate`                      | A receipt-signing key for production                        |
 
@@ -197,9 +199,12 @@ Blueprint Path field. Every key is optional.
 
 ## Quality
 
-About 250 unit and integration tests and 30 Playwright end-to-end tests (desktop and phone) run in CI on every
-commit, all in zero-key mode. They cover the guard rules, each Attack Lab attack, the PayPal contract (simulator), the
-signed receipts, MCP over HTTP and stdio, and the full demo story in a browser.
+About 270 unit and integration tests and 30 Playwright end-to-end tests (each on desktop and phone) run in CI on
+every commit, all in zero-key mode. They cover the guard rules, each Attack Lab attack, the PayPal contract
+(simulator), the signed receipts, MCP over HTTP and stdio, the full demo story in a browser, and accessibility
+(WCAG 2.1 AA, axe-core) on every key page. The same end-to-end suite also runs against the live demo, on the PayPal
+sandbox with Claude. **LeashBench** (`npm run bench`, results at `/bench`) runs 60 attack and legitimate payment
+requests through the guard as rules only, AI only, and layered.
 
 ## License
 

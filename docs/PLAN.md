@@ -656,6 +656,13 @@ eligibility math.
 
 **Done when:** the numbers are published in the README and on `/bench`; the layered config beats both single-layer configs.
 
+**Progress:** built. 60 scenarios in `src/server/bench/scenarios.ts` (typed, not JSON, so they reuse the guard's café
+world in `src/server/bench/world.ts`), runner `src/server/bench/run.ts` (calls `runGuard` with layer switches; with
+the rules off, the judge no longer sees the rules' findings), `npm run bench`, Markdown report, `/bench` page, and a
+CI test. Offline numbers (heuristics instead of Claude): rules 27/30 attacks caught, layered 29/30, 0 false
+positives. The bench found a gap, now fixed: one bill sent as suffixed invoices (4490-A/B) under the limit.
+**Left:** `npm run bench -- --publish` with a Claude key, then the numbers go into the README.
+
 ### Step 16: Bring-your-own-agent ✅
 
 **Build**
@@ -715,6 +722,13 @@ request from it gets blocked.
 
 **Build:** Playwright e2e for the demo story + Attack Lab; copy pass; accessibility pass; performance (guard p95
 < 2.5s); realistic seed data; final visual polish; dependency audit.
+
+**Progress:** the whole e2e suite runs against the hosted URL too (shared helpers handle the PayPal sandbox checkout,
+Claude's longer timings, and the fooled-agent replay); accessibility spec (axe-core, WCAG 2.1 AA, console errors)
+over every key page on desktop and phone, with the contrast and keyboard fixes it found; `npm run capture` takes the
+README screenshots and records raw video clips. Dependency audit: 0 known vulnerabilities in production dependencies
+(12 moderate in dev-only tooling: drizzle-kit's esbuild and minimatch; not shipped). **Left:** retake the
+screenshots with Claude live, guard p95 from the live bench run.
 **Done when:** e2e suite green against the hosted URL; no console errors; Lighthouse ≥ 90 for accessibility on key pages.
 
 ### Step 19: Docs & submission package

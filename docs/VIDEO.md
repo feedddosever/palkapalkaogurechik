@@ -17,6 +17,22 @@ Record the voiceover first, then trim each shot to its line. Captions = the voic
 | 10  | 2:27–2:40 | Connect page → Claude Code snippet → console shows "Outside agent over MCP"                                           | "Bring your own agent: anything that speaks MCP, or PayPal's own Agent Toolkit, sits behind the same guard."                                                                                                      |
 | 11  | 2:40–2:48 | Logo + URL + "Built with PayPal · Claude · AG Grid · Channel3 · Render"                                               | "Leash. Let your agent spend, safely, on PayPal."                                                                                                                                                                 |
 
+## Recording the clips
+
+`npm run capture -- --video` drives the hosted demo with Playwright and saves raw clips (desktop 1920×1080 at a
+125% zoom, phone 412×915) to `video/` (git-ignored). Set `JUDGE_BUYER_EMAIL` / `JUDGE_BUYER_PASSWORD` for the PayPal
+login; one run costs about one demo story of Claude calls.
+
+| Clip                    | Shots                                                                    |
+| ----------------------- | ------------------------------------------------------------------------ |
+| `video/01-landing.webm` | 1: landing page                                                          |
+| `video/02-story.webm`   | 2–5: rules → Rule Card, PayPal hold, agent run, fooled-agent replay      |
+| `video/03-phone.webm`   | 6: phone approval → paid → signed receipt                                |
+| `video/04-rest.webm`    | 7–10: Attack Lab, ledger question, end of week + reconciliation, connect |
+
+Trim each clip to its voiceover line; the end card (shot 11) is made in the editor. `npm run capture -- --shots`
+retakes the README screenshots the same way.
+
 ## Recording notes
 
 - Record against the hosted demo with the PayPal sandbox and Claude live (badges should read "judge: allow/block",

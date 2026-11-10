@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
+import { aiSpentToday } from "@/server/ai/budget";
 import { getDbHandle } from "@/server/db/client";
-import { aiBudgetReached, publicFeatureSnapshot } from "@/server/env";
+import { aiBudgetReached, env, publicFeatureSnapshot } from "@/server/env";
 
 /** Liveness + integration status. Used by Render health checks and the judge-mode banner. */
 export async function GET() {
@@ -14,6 +15,11 @@ export async function GET() {
       features: publicFeatureSnapshot(),
       /** Claude is configured but today's AI_DAILY_BUDGET_USD is used up (offline until 00:00 UTC). */
       aiBudgetReached: aiBudgetReached(),
+      /** Estimated Claude spend today (UTC) against the daily budget. */
+      aiSpend: {
+        todayUsd: Math.round(aiSpentToday() * 100) / 100,
+        dailyBudgetUsd: env.AI_DAILY_BUDGET_USD,
+      },
       latencyMs: Date.now() - startedAt,
     });
   } catch (err) {

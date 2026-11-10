@@ -22,6 +22,7 @@
     "test:sandbox": "vitest run tests/sandbox",
     "demo:restock": "tsx scripts/demo-restock.ts",
     "bench": "tsx scripts/bench.ts",
+    "capture": "tsx scripts/capture.ts",
     "jobs:cycles": "tsx scripts/cycle-jobs.ts",
     "mcp:stdio": "tsx mcp/stdio.ts",
     "spike:paypal": "tsx scripts/spike-paypal.ts --vault",

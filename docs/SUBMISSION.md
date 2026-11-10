@@ -120,3 +120,22 @@ ag-grid, channel3, render, playwright, vitest
 6. Try the Attack Lab at https://palkapalkaogurechik.onrender.com/lab.
 
 No real money moves anywhere: PayPal runs in sandbox mode.
+
+---
+
+## Submission checklist (not for Devpost)
+
+Deadline: **Thu Nov 12, 3:00 PM EST** (21:00 CET).
+
+- [x] Live demo on Render with the PayPal sandbox and Claude (`/api/health`: `paypalLive` and `aiLive` true)
+- [x] E2E suite green against the live site (`E2E_BASE_URL=… E2E_SANDBOX=1 npx playwright test --project=desktop`)
+- [ ] LeashBench with Claude: `npm run bench -- --publish`, then the numbers go into the README
+- [ ] Screenshots retaken with Claude live: `npm run capture -- --shots`
+- [ ] Judges' PayPal buyer: an English-language (US) sandbox personal account with a large balance, set as
+      `JUDGE_BUYER_EMAIL` / `JUDGE_BUYER_PASSWORD` on Render (the current one is Italian and its balance is low)
+- [ ] Video: `npm run capture -- --video`, voiceover per `docs/VIDEO.md`, YouTube (Public); link in the README and
+      above
+- [ ] Merge the pull request into `main` and tag `v1.0.0`
+- [ ] Devpost form: the sections above, repo link, live demo link, video link
+- [ ] On the day: open the live demo once so the free instance is awake; check `/api/health` shows today's Claude
+      budget isn't used up
