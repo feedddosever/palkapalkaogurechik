@@ -1,15 +1,18 @@
 # Render Blueprint for Leash: Dashboard → New → Blueprint → pick this repo.
+# Paid instance types: Render needs a payment method on file (hackathon credits are used first;
+# this setup is roughly $15/month). No card? Use render-free.yaml instead (set "Blueprint Path").
 # Render asks for the `sync: false` values once, when the Blueprint is created; all are optional
 # (without keys Leash runs on its PayPal simulator and offline AI fallbacks).
 services:
   - type: web
     name: leash
     runtime: node
-    plan: 1c-2g
+    plan: 0.5c-512mb
     region: oregon
     buildCommand: npm ci && npm run build
     preDeployCommand: npm run db:migrate
-    startCommand: npm run start
+    # The app uses ~300 MB; cap the heap on the 512 MB instance (not at build time).
+    startCommand: npm run start:render
     healthCheckPath: /api/health
     autoDeployTrigger: commit
     envVars:
