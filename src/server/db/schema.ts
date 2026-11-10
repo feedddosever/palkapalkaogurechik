@@ -645,6 +645,15 @@ export const labRuns = pgTable(
   ],
 );
 
+// ─── AI spend ───────────────────────────────────────────────────────────────
+
+/** Estimated Claude spend per UTC day across all workspaces, for AI_DAILY_BUDGET_USD. */
+export const aiSpend = pgTable("ai_spend", {
+  day: text("day").primaryKey(),
+  usd: numeric("usd", { precision: 12, scale: 6 }).notNull().default("0"),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
 // ─── Receipt signing keys ───────────────────────────────────────────────────
 
 /**

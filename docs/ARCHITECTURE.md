@@ -134,4 +134,5 @@ events, reconciliations, API keys, and the lab's runs and planted text.
 
 `render.yaml` defines the web service (migrations before deploy, `/api/health` check), Postgres, and an hourly cron
 job that calls the CRON_SECRET-protected scheduler endpoint over Render's private network. Each `/demo` visit gets an
-isolated workspace; public entry points are rate limited.
+isolated workspace; public entry points are rate limited, and a daily budget caps Claude spend for the whole
+deployment (past it, the guard and agent use their offline fallbacks until midnight UTC).

@@ -1,7 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import type * as z from "zod/v4";
-import { env, features } from "@/server/env";
+import { recordAiSpend } from "@/server/ai/budget";
+import { env } from "@/server/env";
 
 /**
  * Thin wrapper around the Anthropic SDK for Leash's AI layers.
@@ -51,7 +52,9 @@ const globalForAi = globalThis as unknown as {
 };
 
 export function getAnthropic(): Anthropic {
-  if (!features.aiLive) throw new AiUnavailableError();
+  // Only the key matters here: the daily budget decides upstream (features.aiLive) whether a check
+  // or a run uses Claude at all, so work that already started can finish.
+  if (!env.ANTHROPIC_API_KEY) throw new AiUnavailableError();
   globalForAi.__leashAnthropic ??= new Anthropic({
     apiKey: env.ANTHROPIC_API_KEY,
     // Pin the public API; don't inherit ANTHROPIC_BASE_URL from developer tooling.
@@ -183,6 +186,7 @@ export async function runStructured<S extends z.ZodType>({
     }),
     latencyMs: Date.now() - started,
   };
+  recordAiSpend(usage.costUsd);
   return { data: response.parsed_output as z.infer<S>, usage };
 }
 
@@ -263,6 +267,13 @@ export async function runJsonSchema<T = unknown>({
   const u = response.usage;
   const cacheRead = u.cache_read_input_tokens ?? 0;
   const cacheWrite = u.cache_creation_input_tokens ?? 0;
+  const costUsd = estimateCost(response.model, {
+    input: u.input_tokens,
+    output: u.output_tokens,
+    cacheRead,
+    cacheWrite,
+  });
+  recordAiSpend(costUsd);
   return {
     data: JSON.parse(text.text) as T,
     usage: {
@@ -271,12 +282,7 @@ export async function runJsonSchema<T = unknown>({
       outputTokens: u.output_tokens,
       cacheReadTokens: cacheRead,
       cacheWriteTokens: cacheWrite,
-      costUsd: estimateCost(response.model, {
-        input: u.input_tokens,
-        output: u.output_tokens,
-        cacheRead,
-        cacheWrite,
-      }),
+      costUsd,
       latencyMs: Date.now() - started,
     },
   };

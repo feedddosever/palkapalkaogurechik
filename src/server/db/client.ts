@@ -1,6 +1,7 @@
 import path from "node:path";
 import { mkdirSync } from "node:fs";
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { attachAiSpendStore } from "@/server/ai/budget";
 import { env } from "@/server/env";
 import * as schema from "./schema";
 
@@ -43,10 +44,16 @@ async function connect(): Promise<Handle> {
 
 /** Lazily connects and applies pending migrations (zero-setup local dev). */
 export function getDbHandle(): Promise<Handle> {
-  globalForDb.__leashDb ??= connect().catch((err) => {
-    globalForDb.__leashDb = undefined;
-    throw err;
-  });
+  globalForDb.__leashDb ??= connect()
+    .then(async (handle) => {
+      // Today's Claude spend survives restarts (the daily AI budget).
+      await attachAiSpendStore(handle.db).catch(() => undefined);
+      return handle;
+    })
+    .catch((err) => {
+      globalForDb.__leashDb = undefined;
+      throw err;
+    });
   return globalForDb.__leashDb;
 }
 

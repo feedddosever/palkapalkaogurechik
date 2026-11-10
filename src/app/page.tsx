@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Timeline, TimelineItem } from "@/components/ui/timeline";
 import { VerdictBadge } from "@/components/ui/verdict-badge";
-import { publicFeatureSnapshot, type Features } from "@/server/env";
+import { aiBudgetReached, publicFeatureSnapshot, type Features } from "@/server/env";
 
 const principles = [
   {
@@ -122,9 +122,9 @@ export default function Home() {
 async function IntegrationStatus() {
   await connection();
   const f: Features = publicFeatureSnapshot();
-  const items: { label: string; live: boolean }[] = [
+  const items: { label: string; live: boolean; note?: string }[] = [
     { label: "PayPal sandbox", live: f.paypalLive },
-    { label: "Claude", live: f.aiLive },
+    { label: "Claude", live: f.aiLive, note: aiBudgetReached() ? "today's budget used" : undefined },
     { label: "Channel3", live: f.channel3Live },
     { label: "Postgres", live: f.postgres },
   ];
@@ -137,7 +137,7 @@ async function IntegrationStatus() {
               aria-hidden
               className={i.live ? "bg-allow size-1.5 rounded-full" : "bg-subtle size-1.5 rounded-full"}
             />
-            {i.label}: {i.live ? "live" : "offline mode"}
+            {i.label}: {i.live ? "live" : (i.note ?? "offline mode")}
           </Badge>
         </li>
       ))}

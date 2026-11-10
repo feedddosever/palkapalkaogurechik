@@ -36,6 +36,8 @@ projects:
                 generateValue: true
               - key: LAB_DAILY_BUDGET_USD
                 value: "3"
+              - key: AI_DAILY_BUDGET_USD
+                value: "5"
               # PayPal sandbox app (developer.paypal.com → Apps & Credentials, Sandbox).
               - key: PAYPAL_CLIENT_ID
                 sync: false

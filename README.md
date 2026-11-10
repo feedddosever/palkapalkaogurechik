@@ -103,7 +103,9 @@ layer fails _closed_ (the payment goes to the owner).
 | Ask the ledger    | Turns a plain-English question into AG Grid state through the AG Grid AI Toolkit                         |
 | Attack Lab        | Works out what a visitor's attack text asks the (hijacked) agent to do                                   |
 
-Model choice is resolved at runtime (newest available model per tier), and the lab has a daily AI budget.
+Model choice is resolved at runtime (newest available model per tier). A daily budget (`AI_DAILY_BUDGET_USD`,
+plus a separate one for the lab) caps Claude spend for the whole deployment; past it, Leash quietly switches to the
+offline checks until midnight UTC, so a public demo can't drain the API credits.
 
 ## Bring your own agent
 
@@ -170,6 +172,7 @@ live:
 | ------------------------------------------ | ----------------------------------------------------------- |
 | `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` | The PayPal sandbox (instead of the simulator)               |
 | `ANTHROPIC_API_KEY`                        | Claude for the compiler, scanner, judge, agent and writers  |
+| `AI_DAILY_BUDGET_USD`                      | Daily cap on Claude spend (default $5; then offline checks) |
 | `CHANNEL3_API_KEY`                         | Live product search and market prices (instead of fixtures) |
 | `NEXT_PUBLIC_AG_GRID_LICENSE_KEY`          | AG Grid Enterprise without the trial watermark              |
 | `DATABASE_URL`                             | Postgres (instead of embedded PGlite)                       |

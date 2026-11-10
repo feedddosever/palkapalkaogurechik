@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { aiSpentToday } from "@/server/ai/budget";
 
 /**
  * Environment configuration.
@@ -42,6 +43,8 @@ const schema = z.object({
   ANTHROPIC_API_KEY: optional,
   AI_MODEL_SMART: optional,
   AI_MODEL_FAST: optional,
+  /** Daily cap on estimated Claude spend for the whole deployment; above it Leash runs offline until 00:00 UTC. */
+  AI_DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(5),
 
   // Product data.
   CHANNEL3_API_KEY: optional,
@@ -129,11 +132,22 @@ export const env = new Proxy({} as Env, {
   get: (_t, key: string) => load().env[key as keyof Env],
 });
 
+/** A key is configured and today's Claude spend is under AI_DAILY_BUDGET_USD. */
+function aiAvailable(): boolean {
+  const { env, features } = load();
+  return features.aiLive && aiSpentToday() < env.AI_DAILY_BUDGET_USD;
+}
+
+/** True when Claude is configured but today's budget is used up (Leash is running offline). */
+export function aiBudgetReached(): boolean {
+  return load().features.aiLive && !aiAvailable();
+}
+
 export const features = new Proxy({} as Features, {
-  get: (_t, key: string) => load().features[key as keyof Features],
+  get: (_t, key: string) => (key === "aiLive" ? aiAvailable() : load().features[key as keyof Features]),
 });
 
 /** Snapshot safe to expose publicly (no secrets). */
 export function publicFeatureSnapshot(): Features {
-  return { ...load().features };
+  return { ...load().features, aiLive: aiAvailable() };
 }
