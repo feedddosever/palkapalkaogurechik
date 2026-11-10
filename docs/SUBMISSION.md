@@ -1,7 +1,7 @@
 # Devpost submission (draft)
 
-Copy each section into the matching Devpost field. Items marked **TODO** are filled in once the deploy and the video
-are live.
+Copy each section into the matching Devpost field. Items marked **TODO** are filled in once the
+video is live.
 
 ## Project name
 
@@ -14,7 +14,7 @@ a guard that blocks hijacked agents before money moves.
 
 ## Links
 
-- Live demo: **TODO** (Render URL)/demo
+- Live demo: https://palkapalkaogurechik.onrender.com/demo (Attack Lab: https://palkapalkaogurechik.onrender.com/lab)
 - Video: **TODO** (YouTube)
 - Code: https://github.com/feedddosever/palkapalkaogurechik
 
@@ -109,11 +109,12 @@ ag-grid, channel3, render, playwright, vitest
 
 ## Testing instructions for judges
 
-1. Open **TODO**/demo. You get your own fresh café.
+1. Open https://palkapalkaogurechik.onrender.com/demo. You get your own fresh café. (Free hosting: if the site has been idle, the first page takes about a
+   minute to load.)
 2. Compile the rules, fund the leash and approve the $500 hold. The page shows the PayPal sandbox test buyer login.
 3. Run the weekly restock and watch the console: two orders paid, one approval, one legit invoice paid, the "we
    changed banks" invoice blocked.
 4. Approve the waiting payment (control tower → Review), then open its signed receipt.
-5. Try the Attack Lab at **TODO**/lab.
+5. Try the Attack Lab at https://palkapalkaogurechik.onrender.com/lab.
 
 No real money moves anywhere: PayPal runs in sandbox mode.

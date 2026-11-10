@@ -33,7 +33,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 14  | Allowance cycle jobs (void, reauthorize, renew, reconcile)                      | —                                 | ✅     |
 | 15  | LeashBench (measured security results)                                          | Anthropic key                     | ⬜     |
 | 16  | Bring-your-own-agent: Leash MCP server + Agent Toolkit guard                    | —                                 | ✅     |
-| 17  | Judge mode + deploy to Render                                                   | Render account                    | ⬜     |
+| 17  | Judge mode + deploy to Render                                                   | Render account                    | ✅     |
 | 18  | Hardening & polish                                                              | —                                 | ⬜     |
 | 19  | Docs & submission package                                                       | —                                 | ⬜     |
 | 20  | Demo video                                                                      | Owner: voiceover + YouTube upload | ⬜     |
@@ -676,7 +676,7 @@ request from it gets blocked.
   from the injected listing are blocked, the console shows the MCP session, a revoked key gets 401; the stdio
   bridge lists the tools and reads the budget.
 
-### Step 17: Judge mode + deploy to Render
+### Step 17: Judge mode + deploy to Render ✅
 
 **Needs:** Render account (owner connects the GitHub repo).
 **Build**
@@ -688,7 +688,13 @@ request from it gets blocked.
 
 **Done when:** the hosted URL works from a fresh browser; a new judge completes the core story in under 2 minutes.
 
-- **Prep done (deploy pending):** `render.yaml` (web `1c-2g` with pre-deploy migrations and `/api/health`, Postgres
+- **Live:** https://palkapalkaogurechik.onrender.com on Render's free tier (`render-free.yaml`: the existing web service + free Postgres; Render
+  needs a card for paid plans). Verified from this container against the hosted URL: the demo story (≈30 s
+  automated), receipts, the Attack Lab, an MCP client over HTTPS, the stdio bridge, smoke tests. Free-tier caveats:
+  ~1 min cold start after 15 idle minutes; the free database expires ~Dec 10 (upgradeable); no cron job.
+  PayPal and Claude keys are not set on Render yet (simulator + offline fallbacks); they go in after Step 13 is
+  verified locally.
+- **Prep:** `render.yaml` (web `1c-2g` with pre-deploy migrations and `/api/health`, Postgres
   `256mb`, hourly cron calling the CRON_SECRET-protected endpoint over the private network; generated receipt and
   cron secrets; optional keys prompted once). `/demo` is always dynamic (fixed an intermittent build crash) and
   rate limited; landing/lab buttons create a fresh café; onboarding shows the sandbox test buyer

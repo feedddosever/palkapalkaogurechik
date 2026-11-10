@@ -4,10 +4,10 @@
 
 > PayPal gave AI agents the power to pay. Leash gives business owners the confidence to let them.
 
-<!-- LINKS: live demo and video are added when they're published. -->
+<!-- LINKS: the video link is added when it's published. -->
 
-**Live demo:** _added with the Render deploy_ · **Video:** _added at submission_ ·
-**Try to break it:** the Attack Lab at `/lab`
+**Live demo:** [palkapalkaogurechik.onrender.com/demo](https://palkapalkaogurechik.onrender.com/demo) (free hosting: the first visit after a quiet spell takes about a
+minute to wake up) · **Attack Lab:** [palkapalkaogurechik.onrender.com/lab](https://palkapalkaogurechik.onrender.com/lab) · **Video:** _added at submission_
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/feedddosever/palkapalkaogurechik)
 
@@ -51,7 +51,7 @@ supplier invoices. With Leash:
 
 ## Try it in two minutes
 
-1. Open the live demo's **`/demo`**: you get your own fresh café (nothing is shared between visitors).
+1. Open **[the live demo](https://palkapalkaogurechik.onrender.com/demo)**: you get your own fresh café (nothing is shared between visitors).
 2. **Compile my rules** → read the Rule Card → **Fund the leash with PayPal** and approve the $500 hold (the page shows
    the PayPal sandbox test buyer login).
 3. **Run the weekly restock** and watch the live agent console: two orders are auto-paid, the $141 oat-milk order goes
