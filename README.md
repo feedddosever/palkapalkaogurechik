@@ -54,14 +54,16 @@ supplier invoices. With Leash:
 1. Open **[the live demo](https://palkapalkaogurechik.onrender.com/demo)**: you get your own fresh café (nothing is shared between visitors).
 2. **Compile my rules** → read the Rule Card → **Fund the leash with PayPal** and approve the $500 hold (the page shows
    the PayPal sandbox test buyer login).
-3. **Run the weekly restock** and watch the live agent console: two orders are auto-paid, the $141 oat-milk order goes
-   to Dana's phone, a legitimate invoice is paid, and the **"we changed banks" invoice is blocked** (the leash drops
-   from L1 to L0).
-4. On the control tower, **Review** the waiting payment (or scan the QR with your phone) and approve it. Open its
-   **signed receipt** and see it verify.
-5. **Ledger:** ask it a question in plain English ("what did Leash block?") or use the presets and charts.
-6. **End week now:** the rest of the hold is voided in PayPal and next week's hold is placed automatically.
-7. **Attack Lab (`/lab`):** run the four preset attacks, or write your own phishing email or hidden page text.
+3. **Run the weekly restock** and watch the live agent console: Claude auto-pays two orders and a legitimate invoice,
+   the $141 oat-milk order goes to Dana's phone, and it leaves the **"we changed banks" invoice** unpaid.
+4. Agents don't always catch that. On the control tower, **Replay with a fooled agent**: a simulated agent that
+   believes the email tries to pay it, and **Leash blocks it** (the leash drops from L1 to L0). Without a Claude key,
+   the offline agent falls for it in the first run and Leash blocks it there.
+5. **Review** the waiting payment (or scan the QR with your phone) and approve it. Open its **signed receipt** and see
+   it verify.
+6. **Ledger:** ask it a question in plain English ("what did Leash block?") or use the presets and charts.
+7. **End week now:** the rest of the hold is voided in PayPal and next week's hold is placed automatically.
+8. **Attack Lab (`/lab`):** run the four preset attacks, or write your own phishing email or hidden page text.
 
 ## How PayPal is used
 

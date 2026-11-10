@@ -112,9 +112,11 @@ ag-grid, channel3, render, playwright, vitest
 1. Open https://palkapalkaogurechik.onrender.com/demo. You get your own fresh café. (Free hosting: if the site has been idle, the first page takes about a
    minute to load.)
 2. Compile the rules, fund the leash and approve the $500 hold. The page shows the PayPal sandbox test buyer login.
-3. Run the weekly restock and watch the console: two orders paid, one approval, one legit invoice paid, the "we
-   changed banks" invoice blocked.
-4. Approve the waiting payment (control tower → Review), then open its signed receipt.
-5. Try the Attack Lab at https://palkapalkaogurechik.onrender.com/lab.
+3. Run the weekly restock and watch the console: two orders paid, one approval, one legit invoice paid. Claude leaves
+   the "we changed banks" invoice unpaid.
+4. On the control tower, click "Replay with a fooled agent": a simulated agent that falls for the email tries to pay
+   it, Leash blocks it, and the agent's leash drops from L1 to L0.
+5. Approve the waiting payment (control tower → Review), then open its signed receipt.
+6. Try the Attack Lab at https://palkapalkaogurechik.onrender.com/lab.
 
 No real money moves anywhere: PayPal runs in sandbox mode.
