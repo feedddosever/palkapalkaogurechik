@@ -302,9 +302,47 @@ export const payeeRule: Rule = (req, p, ctx) => {
 
 // ─── Patterns over time ─────────────────────────────────────────────────────
 
+/** "4490-A" / "4490-2" → "4490": an invoice number that marks one part of a bill. */
+export function splitInvoiceBase(invoiceNumber?: string): string | undefined {
+  const m = invoiceNumber?.trim().match(/^(.+?)[-_/ .](?:[a-z]|\d{1,2}|part\s*\d{1,2})$/i);
+  return m ? m[1].toLowerCase() : undefined;
+}
+
+/** One bill sent as several suffixed invoices that together pass the approval limit. */
+function splitInvoiceFindings(req: GuardRequest, p: Policy, ctx: GuardContext): RuleResult[] {
+  const base = splitInvoiceBase(req.invoiceNumber);
+  if (!base) return [];
+  const amount = toCents(req.amount);
+  const threshold = toCents(p.approvalThreshold);
+  if (amount > threshold) return [];
+  const since = ctx.now.getTime() - p.structuring.windowHours * HOUR;
+  const parts = ctx.recentRequests.filter(
+    (r) =>
+      r.kind === "invoice" &&
+      r.createdAt.getTime() >= since &&
+      LIVE_STATUSES.has(r.status) &&
+      r.idempotencyKey !== req.idempotencyKey &&
+      sameSupplier(r, req) &&
+      splitInvoiceBase(r.invoiceNumber) === base,
+  );
+  if (!parts.length) return [];
+  const total = parts.reduce((acc, r) => acc + toCents(r.amount), amount);
+  if (total <= threshold) return [];
+  return [
+    finding(
+      "STRUCTURING_SUSPECTED",
+      "NEEDS_APPROVAL",
+      `Invoice ${req.invoiceNumber} is part ${parts.length + 1} of one bill from ${req.supplierName}: the parts add up to ${money(total)}, over your ${formatMoney(p.approvalThreshold)} limit. A bill split to stay under the limit needs your approval.`,
+      { data: { parts: parts.length + 1, total: fromCents(total) } },
+    ),
+  ];
+}
+
 export const structuringRule: Rule = (req, p, ctx) => {
-  // Splitting is a purchase pattern; invoice amounts are fixed by the supplier's bill.
-  if (!p.structuring.enabled || req.kind !== "purchase") return [];
+  if (!p.structuring.enabled) return [];
+  // Invoice amounts are the supplier's to set, so only a bill split into suffixed parts counts.
+  if (req.kind === "invoice") return splitInvoiceFindings(req, p, ctx);
+  if (req.kind !== "purchase") return [];
   const amount = toCents(req.amount);
   const threshold = toCents(p.approvalThreshold);
   if (amount > threshold) return []; // already needs approval on its own

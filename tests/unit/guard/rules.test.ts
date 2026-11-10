@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { evaluateRules } from "@/server/guard/evaluate";
+import { splitInvoiceBase } from "@/server/guard/rules";
 import type { GuardContext, GuardRequest, RuleCode } from "@/server/guard/types";
 import { ctx, invoice, minutesAgo, policy, purchase, recent, STORY, SUPPLIERS } from "./fixtures";
 
@@ -319,5 +320,39 @@ describe("sanity checks", () => {
     req.items[0].unitPrice = "50.00";
     req.amount = "50.00";
     expect(codes(req)).not.toContain("PRICE_ABOVE_MARKET");
+  });
+});
+
+describe("one bill split into suffixed invoices", () => {
+  const northsideInvoice = (invoiceNumber: string, amount = "95.00") =>
+    invoice({
+      supplierName: "Northside Roasters",
+      supplierSlug: "northside-roasters",
+      payeeEmail: "billing@northside-roasters.example",
+      amount,
+      invoiceNumber,
+    });
+
+  it("recognizes part suffixes, not ordinary invoice numbers", () => {
+    expect(splitInvoiceBase("4490-A")).toBe("4490");
+    expect(splitInvoiceBase("4490-2")).toBe("4490");
+    expect(splitInvoiceBase("INV 77 part 2")).toBe("inv 77");
+    expect(splitInvoiceBase("PG-2231")).toBeUndefined();
+    expect(splitInvoiceBase("OC-881")).toBeUndefined();
+    expect(splitInvoiceBase("4471")).toBeUndefined();
+  });
+
+  it("asks the owner when the parts add up to more than the limit", () => {
+    const c = ctx({ recentRequests: [recent(northsideInvoice("4490-A"), { createdAt: minutesAgo(40) })] });
+    expect(codes(northsideInvoice("4490-B"), c)).toContain("STRUCTURING_SUSPECTED");
+  });
+
+  it("leaves separate bills and small parts alone", () => {
+    const separate = ctx({
+      recentRequests: [recent(northsideInvoice("4489"), { createdAt: minutesAgo(40) })],
+    });
+    expect(codes(northsideInvoice("4490"), separate)).not.toContain("STRUCTURING_SUSPECTED");
+    const small = ctx({ recentRequests: [recent(northsideInvoice("4490-A", "40.00"))] });
+    expect(codes(northsideInvoice("4490-B", "40.00"), small)).not.toContain("STRUCTURING_SUSPECTED");
   });
 });
