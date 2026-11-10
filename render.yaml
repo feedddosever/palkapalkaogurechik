@@ -73,6 +73,6 @@ services:
 
 databases:
   - name: leash-db
-    plan: 256mb
+    plan: 0.1c-256mb
     region: oregon
     postgresMajorVersion: "17"
