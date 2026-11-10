@@ -1,16 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
+import { AI_TIMEOUT, compileAndFund, expectBecBlocked, runRestock } from "./helpers";
 
 async function fundAndRun(page: Page) {
-  await page.goto("/demo");
-  await page.getByRole("button", { name: "Compile my rules" }).click();
-  await page.getByRole("button", { name: /fund the leash with PayPal/ }).click();
-  await page.getByRole("button", { name: /Approve \$500\.00 hold/ }).click();
-  await page.getByRole("button", { name: "Run the weekly restock" }).click();
-  await expect(page.getByText("Run finished").filter({ visible: true })).toBeVisible({ timeout: 30_000 });
+  await compileAndFund(page);
+  await runRestock(page);
+  await expectBecBlocked(page);
 }
 
 test("ledger: AG Grid with presets and plain-English questions", async ({ page }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(360_000);
   await fundAndRun(page);
   await page.goto("/app/ledger");
   const grid = page.getByRole("treegrid").or(page.getByRole("grid")).first();
@@ -24,9 +22,8 @@ test("ledger: AG Grid with presets and plain-English questions", async ({ page }
   await page.getByRole("button", { name: "Reset" }).click();
   await page.getByLabel(/Ask the ledger/).fill("waiting payments over $100");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
-  await expect(
-    page.getByRole("status").filter({ hasText: "Showing waiting for you, over $100." }),
-  ).toBeVisible();
+  // The offline parser says "Showing waiting for you, over $100."; Claude words it its own way.
+  await expect(page.getByRole("status").filter({ hasText: /waiting/i })).toBeVisible({ timeout: AI_TIMEOUT });
   await expect(grid.getByText("6× Barista Oat Milk", { exact: false })).toBeVisible();
   await expect(grid.getByText("Invoice 4471")).toHaveCount(0);
 });

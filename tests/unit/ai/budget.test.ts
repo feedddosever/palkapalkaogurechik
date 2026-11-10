@@ -1,10 +1,5 @@
 import { afterAll, afterEach, describe, expect, it } from "vitest";
-import {
-  aiSpentToday,
-  attachAiSpendStore,
-  recordAiSpend,
-  resetAiSpendForTesting,
-} from "@/server/ai/budget";
+import { aiSpentToday, attachAiSpendStore, recordAiSpend, resetAiSpendForTesting } from "@/server/ai/budget";
 import { closeDb, getDb } from "@/server/db/client";
 import { aiBudgetReached, features, publicFeatureSnapshot, resetEnvForTesting } from "@/server/env";
 

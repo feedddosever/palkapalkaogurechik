@@ -80,11 +80,25 @@ export async function runGuard({
     };
   });
 
+  // With the rules layer off (LeashBench's "AI only"), the judge mustn't see the rules' findings.
+  const judgeRules: RulesEvaluation = layers.rules
+    ? rules
+    : { verdict: "ALLOW", results: [], waived: [], attack: false };
+
   const [scan, judge] = await Promise.all([
     layers.scanner ? scanSources(sources, { ai }) : Promise.resolve<ScanResult>({ findings: [] }),
     layers.judge
       ? judgePayment(
-          { request, policy, agentTask, justification, sources, findings: quickFindings, rules, marketNote },
+          {
+            request,
+            policy,
+            agentTask,
+            justification,
+            sources,
+            findings: layers.scanner ? quickFindings : [],
+            rules: judgeRules,
+            marketNote,
+          },
           { ai },
         )
       : Promise.resolve<JudgeResult>({

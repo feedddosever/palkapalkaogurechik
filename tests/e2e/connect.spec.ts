@@ -2,14 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { compileAndFund } from "./helpers";
 
 async function fundedDemo(page: Page) {
-  await page.goto("/demo");
-  await page.getByRole("button", { name: "Compile my rules" }).click();
-  const card = page.getByRole("region", { name: "Compiled rules" });
-  await card.getByRole("button", { name: /fund the leash with PayPal/ }).click();
-  await page.getByRole("button", { name: /Approve \$500\.00 hold/ }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("$500.00 is on a leash");
+  await compileAndFund(page);
 }
 
 async function createKey(page: Page, name: string) {
@@ -30,7 +26,7 @@ test("bring your own agent: an MCP client buys through Leash, and an injected pu
   page,
   baseURL,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(240_000);
   await fundedDemo(page);
   const key = await createKey(page, "E2E agent");
   await expect(page.getByRole("list", { name: "API keys" })).toContainText("E2E agent");
@@ -103,7 +99,7 @@ test("bring your own agent: an MCP client buys through Leash, and an injected pu
 
 test("the stdio bridge (Claude Desktop) exposes Leash's tools", async ({ page, baseURL, isMobile }) => {
   test.skip(isMobile, "API-only check; once is enough");
-  test.setTimeout(90_000);
+  test.setTimeout(240_000);
   await fundedDemo(page);
   const key = await createKey(page, "Desktop bridge");
   const client = new Client({ name: "desktop", version: "1.0.0" });
