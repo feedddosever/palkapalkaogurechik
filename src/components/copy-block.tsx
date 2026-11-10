@@ -9,7 +9,12 @@ export function CopyBlock({ code, label, className }: { code: string; label: str
   const [copied, setCopied] = useState(false);
   return (
     <div className={cn("border-border bg-surface-muted relative rounded-lg border", className)}>
-      <pre className="overflow-x-auto p-3 pr-12 font-mono text-xs leading-relaxed whitespace-pre">
+      {/* Focusable so keyboard users can scroll long lines sideways. */}
+      <pre
+        tabIndex={0}
+        aria-label={label}
+        className="focus-visible:ring-primary overflow-x-auto rounded-lg p-3 pr-12 font-mono text-xs leading-relaxed whitespace-pre focus-visible:ring-2 focus-visible:outline-none"
+      >
         <code>{code}</code>
       </pre>
       <button

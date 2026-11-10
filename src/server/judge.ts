@@ -24,9 +24,9 @@ export function rateLimit(key: string, limit: number, windowMs: number, now = Da
   return true;
 }
 
-/** Each /demo visit creates a seeded workspace: 15 per visitor and 400 overall per hour. */
+/** Each /demo visit creates a seeded workspace: 15 per visitor (DEMO_PER_CLIENT_HOURLY) and 400 overall per hour. */
 export const allowDemo = (clientKey: string) =>
-  rateLimit(`demo:${clientKey}`, 15, HOUR) && rateLimit("demo:all", 400, HOUR);
+  rateLimit(`demo:${clientKey}`, env.DEMO_PER_CLIENT_HOURLY, HOUR) && rateLimit("demo:all", 400, HOUR);
 
 /** AI-backed owner actions (compile rules, ask the ledger): 30 per workspace per hour. */
 export const allowAiAction = (workspaceId: string) => rateLimit(`ai:${workspaceId}`, 30, HOUR);

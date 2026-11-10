@@ -107,7 +107,8 @@ async function Trust() {
                   className={cn(
                     "flex items-start gap-3 rounded-lg border p-3",
                     l === level ? "border-primary bg-accent" : "border-border",
-                    l > level ? "opacity-70" : "",
+                    // Levels not reached yet: dashed, not faded (faded text fails contrast).
+                    l > level ? "bg-surface-muted/40 border-dashed" : "",
                   )}
                 >
                   <span

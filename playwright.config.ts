@@ -31,6 +31,7 @@ export default defineConfig({
           PGLITE_DIR: ".data/e2e-pglite",
           APP_URL: baseURL,
           LAB_RUNS_PER_CLIENT: "500",
+          DEMO_PER_CLIENT_HOURLY: "1000",
           // The simulator unless E2E_SANDBOX=1 (tests/e2e/sandbox-flow.spec.ts).
           PAYPAL_MODE: process.env.E2E_SANDBOX === "1" ? "auto" : "sim",
         },

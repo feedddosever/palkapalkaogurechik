@@ -69,6 +69,8 @@ const schema = z.object({
   LAB_DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(5),
   /** Lab runs allowed per visitor in 10 minutes. */
   LAB_RUNS_PER_CLIENT: z.coerce.number().int().positive().default(6),
+  /** Fresh demo cafés (/demo) allowed per visitor per hour. */
+  DEMO_PER_CLIENT_HOURLY: z.coerce.number().int().positive().default(15),
 });
 
 export type Env = z.infer<typeof schema>;
