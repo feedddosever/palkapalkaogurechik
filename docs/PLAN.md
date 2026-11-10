@@ -727,8 +727,8 @@ request from it gets blocked.
 Claude's longer timings, and the fooled-agent replay); accessibility spec (axe-core, WCAG 2.1 AA, console errors)
 over every key page on desktop and phone, with the contrast and keyboard fixes it found; `npm run capture` takes the
 README screenshots and records raw video clips. Dependency audit: 0 known vulnerabilities in production dependencies
-(12 moderate in dev-only tooling: drizzle-kit's esbuild and minimatch; not shipped). **Left:** retake the
-screenshots with Claude live, guard p95 from the live bench run.
+(12 moderate in dev-only tooling: drizzle-kit's esbuild and minimatch; not shipped). Screenshots retaken on the
+live demo with Claude. **Left:** guard p95 from the live bench run.
 **Done when:** e2e suite green against the hosted URL; no console errors; Lighthouse ≥ 90 for accessibility on key pages.
 
 ### Step 19: Docs & submission package
