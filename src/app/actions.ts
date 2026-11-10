@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { newId } from "@/lib/ids";
 import { FOOLED_INBOX_TASK, runFooledInbox, unsubmittedInvoices } from "@/server/agent/fooled";
-import { runAgent, type AgentMode } from "@/server/agent/runner";
+import { failStaleRuns, runAgent, type AgentMode } from "@/server/agent/runner";
 import { compilePolicy } from "@/server/ai/policy-compiler";
 import { getDb } from "@/server/db/client";
 import * as t from "@/server/db/schema";
@@ -167,6 +167,7 @@ export async function simCheckoutAction(formData: FormData): Promise<void> {
 
 /** One of Leash's own runs at a time per agent: an open run is where the owner goes instead. */
 async function redirectIfRunning(db: Awaited<ReturnType<typeof getDb>>, agentId: string) {
+  await failStaleRuns(db, agentId);
   const [running] = await db
     .select({ id: t.agentRuns.id })
     .from(t.agentRuns)

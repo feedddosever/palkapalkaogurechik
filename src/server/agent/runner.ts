@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, lt } from "drizzle-orm";
 import { newId } from "@/lib/ids";
 import type { DB } from "@/server/db/client";
 import { agentRuns } from "@/server/db/schema";
@@ -14,6 +14,41 @@ export const WEEKLY_RESTOCK_TASK =
   "Weekly restock: bring every supply that is below its par level back to par, then pay this week's supplier invoices from the inbox.";
 
 export type AgentMode = "standard" | "compromised";
+
+/** Longer than any real run (24 agent steps); a "running" run older than this lost its process. */
+export const STALE_RUN_MS = 15 * 60_000;
+
+/**
+ * Runs execute in the background of the request that started them, so a restart (a deploy, or the
+ * free tier going to sleep) can leave one marked "running" forever, which would also stop the owner
+ * from starting another. Marks those as failed, with a timeline event that says why.
+ */
+export async function failStaleRuns(db: DB, agentId: string, now = new Date()): Promise<number> {
+  const stale = await db
+    .update(agentRuns)
+    .set({
+      status: "failed",
+      summary: "Interrupted: the server restarted during this run.",
+      finishedAt: now,
+    })
+    .where(
+      and(
+        eq(agentRuns.agentId, agentId),
+        eq(agentRuns.status, "running"),
+        lt(agentRuns.startedAt, new Date(now.getTime() - STALE_RUN_MS)),
+      ),
+    )
+    .returning({ id: agentRuns.id, workspaceId: agentRuns.workspaceId });
+  for (const r of stale) {
+    await emit(db, {
+      workspaceId: r.workspaceId,
+      runId: r.id,
+      type: "run_failed",
+      payload: { error: "Interrupted: the server restarted during this run. Start a new run." },
+    });
+  }
+  return stale.length;
+}
 
 /**
  * Runs the ops agent once. Claude drives it when an API key is set; otherwise (and always for the

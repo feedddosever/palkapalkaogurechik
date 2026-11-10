@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, max } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { fromCents, multiplyAmount, toCents } from "@/lib/money";
 import { describeRequest } from "@/lib/requests";
+import { failStaleRuns, STALE_RUN_MS } from "@/server/agent/runner";
 import { marketQuoteFor } from "@/server/catalog";
 import { getDb, type DB } from "@/server/db/client";
 import * as t from "@/server/db/schema";
@@ -151,6 +152,7 @@ export async function dashboard(workspaceId: string) {
         );
     }
   }
+  await failStaleRuns(db, agent.id);
   const [lastRun] = await db
     .select()
     .from(t.agentRuns)
@@ -254,6 +256,11 @@ export async function approvalView(approvalId: string) {
 export async function runView(runId: string) {
   const db = await getDb();
   const [run] = await db.select().from(t.agentRuns).where(eq(t.agentRuns.id, runId));
+  if (run?.status === "running" && Date.now() - run.startedAt.getTime() > STALE_RUN_MS) {
+    await failStaleRuns(db, run.agentId);
+    const [fresh] = await db.select().from(t.agentRuns).where(eq(t.agentRuns.id, runId));
+    return fresh ?? null;
+  }
   return run ?? null;
 }
 

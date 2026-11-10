@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { eq } from "drizzle-orm";
 import { runFooledInbox, unsubmittedInvoices } from "@/server/agent/fooled";
-import { runAgent } from "@/server/agent/runner";
+import { failStaleRuns, runAgent, STALE_RUN_MS } from "@/server/agent/runner";
 import { finishWithSummary } from "@/server/agent/scripted";
 import { executeTool, type ToolContext } from "@/server/agent/tools";
 import { closeDb, getDb } from "@/server/db/client";
@@ -39,6 +39,30 @@ async function carefulAgent(c: ToolContext): Promise<string> {
 }
 
 afterAll(() => closeDb());
+
+describe("runs interrupted by a restart", () => {
+  it("are marked failed after 15 minutes, with a timeline event, so a new run can start", async () => {
+    const ws = await fundedWorkspace();
+    const db = await getDb();
+    const longAgo = new Date(Date.now() - STALE_RUN_MS - 60_000);
+    await db.insert(t.agentRuns).values([
+      {
+        id: "run_stale_test",
+        workspaceId: ws.workspaceId,
+        agentId: ws.agentId,
+        task: "x",
+        startedAt: longAgo,
+      },
+      { id: "run_fresh_test", workspaceId: ws.workspaceId, agentId: ws.agentId, task: "x" },
+    ]);
+    expect(await failStaleRuns(db, ws.agentId)).toBe(1);
+    const runs = await db.select().from(t.agentRuns).where(eq(t.agentRuns.agentId, ws.agentId));
+    const status = Object.fromEntries(runs.map((r) => [r.id, r.status]));
+    expect(status).toMatchObject({ run_stale_test: "failed", run_fresh_test: "running" });
+    const events = await db.select().from(t.agentEvents).where(eq(t.agentEvents.runId, "run_stale_test"));
+    expect(events.map((e) => e.type)).toEqual(["run_failed"]);
+  });
+});
 
 describe("fooled-agent replay", () => {
   it("lists every inbox invoice before any run, and none after the scripted agent pays them all", async () => {
