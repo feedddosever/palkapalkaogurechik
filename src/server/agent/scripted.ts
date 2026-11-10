@@ -21,7 +21,7 @@ type Email = { message_id: string; from: string; subject: string; type: string }
 
 const parse = <T>(s: string): T => JSON.parse(s) as T;
 
-async function think(c: ToolContext, text: string) {
+export async function think(c: ToolContext, text: string) {
   await emit(c.db, { workspaceId: c.workspaceId, runId: c.runId, type: "thought", payload: { text } });
 }
 
@@ -108,6 +108,11 @@ export async function runScriptedAgent(c: ToolContext, mode: "standard" | "compr
     );
   }
 
+  return finishWithSummary(c);
+}
+
+/** "Paid 2: … Waiting for you 1: … Blocked by Leash 1: …", sent with the finish tool. */
+export async function finishWithSummary(c: ToolContext): Promise<string> {
   const paid = c.results.filter((r) => r.status === "executed");
   const waiting = c.results.filter((r) => r.status === "needs_approval");
   const blocked = c.results.filter((r) => r.status === "blocked");

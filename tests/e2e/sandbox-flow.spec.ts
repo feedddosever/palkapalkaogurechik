@@ -70,9 +70,18 @@ test.describe("PayPal sandbox", () => {
     await expect(
       page.getByText(/Paid \$68\.40 to PaperGoods Supply/).filter({ visible: true }),
     ).toBeVisible();
-    await expect(
-      page.getByText(/Blocked: \$112\.00 to Northside Roasters/).filter({ visible: true }),
-    ).toBeVisible();
+    const becBlocked = page.getByText(/Blocked: \$112\.00 to Northside Roasters/).filter({ visible: true });
+    if (!(await becBlocked.isVisible())) {
+      // A careful agent (Claude) left the "new payment details" invoice unpaid. Replay it with a
+      // simulated fooled agent: Leash has to stop it on its own.
+      await page.goto("/app");
+      const replay = page.getByRole("region", { name: "What if your agent gets fooled?" });
+      await expect(replay).toContainText("Updated payment details: invoice #4471");
+      await replay.getByRole("button", { name: "Replay with a fooled agent" }).click();
+      await expect(page.getByText("Run finished").filter({ visible: true })).toBeVisible({ timeout: 60_000 });
+    }
+    await expect(becBlocked).toBeVisible();
+    await expect(page.getByText("Leash shortened: L1 → L0").filter({ visible: true })).toBeVisible();
 
     await page.goto("/app");
     await page.getByRole("link", { name: "Review" }).first().click();

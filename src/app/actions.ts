@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { newId } from "@/lib/ids";
+import { FOOLED_INBOX_TASK, runFooledInbox, unsubmittedInvoices } from "@/server/agent/fooled";
 import { runAgent, type AgentMode } from "@/server/agent/runner";
 import { compilePolicy } from "@/server/ai/policy-compiler";
 import { getDb } from "@/server/db/client";
@@ -164,25 +165,52 @@ export async function simCheckoutAction(formData: FormData): Promise<void> {
   redirect("/onboarding?cancelled=1");
 }
 
-export async function runAgentAction(formData: FormData): Promise<void> {
-  const mode: AgentMode = formData.get("mode") === "compromised" ? "compromised" : "standard";
-  const db = await getDb();
-  const workspaceId = await currentWorkspaceId();
-  const { agent } = await workspaceBasics(db, workspaceId);
+/** One of Leash's own runs at a time per agent: an open run is where the owner goes instead. */
+async function redirectIfRunning(db: Awaited<ReturnType<typeof getDb>>, agentId: string) {
   const [running] = await db
     .select({ id: t.agentRuns.id })
     .from(t.agentRuns)
     .where(
       and(
-        eq(t.agentRuns.agentId, agent.id),
+        eq(t.agentRuns.agentId, agentId),
         eq(t.agentRuns.origin, "leash"),
         inArray(t.agentRuns.status, ["running"]),
       ),
     );
   if (running) redirect(`/app/runs/${running.id}`);
+}
+
+export async function runAgentAction(formData: FormData): Promise<void> {
+  const mode: AgentMode = formData.get("mode") === "compromised" ? "compromised" : "standard";
+  const db = await getDb();
+  const workspaceId = await currentWorkspaceId();
+  const { agent } = await workspaceBasics(db, workspaceId);
+  await redirectIfRunning(db, agent.id);
   const runId = newId("run");
   after(async () => {
     await runAgent(await getDb(), { workspaceId, agentId: agent.id, mode, runId });
+  });
+  redirect(`/app/runs/${runId}`);
+}
+
+/** The invoices the agent left unpaid, replayed by a simulated fooled agent: Leash must hold alone. */
+export async function replayFooledAgentAction(): Promise<void> {
+  const db = await getDb();
+  const workspaceId = await currentWorkspaceId();
+  const { agent } = await workspaceBasics(db, workspaceId);
+  await redirectIfRunning(db, agent.id);
+  if ((await unsubmittedInvoices(db, workspaceId)).length === 0) redirect("/app");
+  const runId = newId("run");
+  after(async () => {
+    await runAgent(await getDb(), {
+      workspaceId,
+      agentId: agent.id,
+      mode: "compromised",
+      runId,
+      task: FOOLED_INBOX_TASK,
+      script: runFooledInbox,
+      refreshTrust: false,
+    });
   });
   redirect(`/app/runs/${runId}`);
 }

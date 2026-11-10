@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Bot, CalendarCheck, ShieldAlert, Smartphone, Sparkles, TrendingDown, Wallet } from "lucide-react";
-import { endWeekAction, fundLeashAction, runAgentAction } from "@/app/actions";
+import { endWeekAction, fundLeashAction, replayFooledAgentAction, runAgentAction } from "@/app/actions";
 import { LeashMeter } from "@/components/leash-meter";
 import { Qr } from "@/components/qr";
 import { RequestList } from "@/components/request-list";
@@ -15,6 +15,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Stat } from "@/components/ui/stat";
 import { formatMoney } from "@/lib/format";
+import { unsubmittedInvoices, type UnpaidInvoice } from "@/server/agent/fooled";
+import { getDb } from "@/server/db/client";
 import { env, features } from "@/server/env";
 import { LEVELS } from "@/server/guard/levels";
 import { currentWorkspaceId, dashboard } from "@/server/views";
@@ -26,6 +28,45 @@ export default function ControlTower() {
     <Suspense fallback={<TowerSkeleton />}>
       <Tower />
     </Suspense>
+  );
+}
+
+/** Shown after a run left invoices unpaid: replay them with a simulated fooled agent. */
+function FooledReplay({ invoices }: { invoices: UnpaidInvoice[] }) {
+  const one = invoices.length === 1;
+  return (
+    <Card role="region" aria-labelledby="fooled-title" className="border-review/40 bg-review-soft/40">
+      <CardContent className="flex flex-col gap-4 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <ShieldAlert className="text-review mt-0.5 size-5 shrink-0" aria-hidden />
+          <div className="flex min-w-0 flex-col gap-1">
+            <p id="fooled-title" className="font-medium">
+              What if your agent gets fooled?
+            </p>
+            <p className="text-muted text-sm">
+              Your agent left {one ? "this invoice" : `these ${invoices.length} invoices`} unpaid. Agents
+              don&apos;t always catch a scam email, so replay {one ? "it" : "them"} with a simulated fooled
+              agent that pays exactly as the email asks, and see what Leash does.
+            </p>
+            <ul className="mt-1 flex flex-col gap-0.5 text-sm">
+              {invoices.map((i) => (
+                <li key={i.messageId} className="break-words">
+                  <span className="font-medium">{i.subject}</span>{" "}
+                  <span className="text-muted">
+                    · {i.fromName} · {formatMoney(i.amount)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <form action={replayFooledAgentAction} className="shrink-0">
+          <Button type="submit" variant="secondary">
+            <Bot aria-hidden /> Replay with a fooled agent
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -41,8 +82,15 @@ function TowerSkeleton() {
 
 async function Tower() {
   await connection();
-  const d = await dashboard(await currentWorkspaceId());
+  const workspaceId = await currentWorkspaceId();
+  const d = await dashboard(workspaceId);
   const running = d.leashRunning;
+  // After a run that left invoices unpaid (a careful agent skips a "we changed banks" email),
+  // offer to replay them with a fooled agent so the owner can see Leash hold on its own.
+  const unpaid =
+    d.cycle?.status === "active" && !running && d.lastRun
+      ? await unsubmittedInvoices(await getDb(), workspaceId)
+      : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -67,6 +115,8 @@ async function Tower() {
           ) : null}
         </div>
       </div>
+
+      {unpaid.length ? <FooledReplay invoices={unpaid} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <Card>
