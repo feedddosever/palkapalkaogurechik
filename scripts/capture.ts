@@ -34,6 +34,8 @@ async function desktop(browser: Browser, name: string): Promise<BrowserContext> 
 
 async function shot(page: Page, file: string, opts: { full?: boolean; maxHeight?: number } = {}) {
   if (mode !== "shots") return;
+  // Let meters and fades finish animating.
+  await page.waitForTimeout(1200);
   const out = path.join(IMAGES, file);
   if (opts.full) {
     const height = await page.evaluate(() => document.documentElement.scrollHeight);

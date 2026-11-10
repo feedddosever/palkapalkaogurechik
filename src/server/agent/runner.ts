@@ -67,6 +67,7 @@ export async function runAgent(
     script,
     refreshTrust = true,
     beforeFinish,
+    persona,
   }: {
     workspaceId: string;
     agentId: string;
@@ -81,11 +82,13 @@ export async function runAgent(
     refreshTrust?: boolean;
     /** Runs after the agent is done and before "run_finished" is emitted. */
     beforeFinish?: (c: ToolContext) => Promise<void>;
+    /** How the console labels a simulated agent (compromised mode): hijacked (Attack Lab) or fooled. */
+    persona?: "hijacked" | "fooled";
   },
 ) {
   const driver = !script && ai && mode === "standard" ? "claude" : "scripted";
   await db.insert(agentRuns).values({ id: runId, workspaceId, agentId, task, mode });
-  await emit(db, { workspaceId, runId, type: "run_started", payload: { task, mode, driver } });
+  await emit(db, { workspaceId, runId, type: "run_started", payload: { task, mode, driver, persona } });
   const ctx: ToolContext = { db, workspaceId, agentId, runId, task, ai, paypal, results: [], costUsd: 0 };
   try {
     const summary = script

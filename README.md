@@ -11,7 +11,7 @@ minute to wake up) · **Attack Lab:** [palkapalkaogurechik.onrender.com/lab](htt
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/feedddosever/palkapalkaogurechik)
 
-![An agent's week in Leash: two orders paid, one sent to the owner's phone, a "we changed banks" invoice blocked](docs/images/agent-console.png)
+![An agent's week in Leash with Claude: two orders and an invoice paid, one order sent to the owner's phone, and the "we changed banks" invoice left unpaid](docs/images/agent-console.png)
 
 ## The problem
 
@@ -48,6 +48,10 @@ supplier invoices. With Leash:
 | Phone approval                                                                                   | Ledger (AG Grid)                                 | Attack Lab                                                                     |
 | ------------------------------------------------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------ |
 | ![Approve $141 on the phone, with the reason and a market check](docs/images/phone-approval.png) | ![The ledger in AG Grid](docs/images/ledger.png) | ![A blocked gift-card injection in the Attack Lab](docs/images/attack-lab.png) |
+
+| Fooled-agent replay                                                                                                                                         | End of the week                                                                                                                         | Signed receipt                                                                |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| ![A simulated fooled agent tries to pay the "we changed banks" invoice; all three layers block it and the leash drops to L0](docs/images/fooled-replay.png) | ![Last week closed: $409.40 spent, $90.60 released back to PayPal, next hold placed from the saved PayPal](docs/images/end-of-week.png) | ![The $141 payment's signed receipt, verified](docs/images/receipt-phone.png) |
 
 ## Try it in two minutes
 

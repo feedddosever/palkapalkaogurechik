@@ -113,6 +113,7 @@ export async function expectBecBlocked(page: Page) {
     const replay = page.getByRole("region", { name: "What if your agent gets fooled?" });
     await expect(replay).toContainText("Updated payment details: invoice #4471");
     await replay.getByRole("button", { name: "Replay with a fooled agent" }).click();
+    await expect(page.getByText("Simulated fooled agent").filter({ visible: true })).toBeVisible();
     await expect(page.getByText("Run finished").filter({ visible: true })).toBeVisible({ timeout: 60_000 });
   }
   await expect(blocked).toBeVisible();

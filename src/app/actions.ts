@@ -211,6 +211,7 @@ export async function replayFooledAgentAction(): Promise<void> {
       task: FOOLED_INBOX_TASK,
       script: runFooledInbox,
       refreshTrust: false,
+      persona: "fooled",
     });
   });
   redirect(`/app/runs/${runId}`);
