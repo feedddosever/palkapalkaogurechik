@@ -60,10 +60,13 @@ async function Approval({ params }: { params: PageProps<"/approve/[id]">["params
           <p className="text-muted text-sm">
             {approved
               ? r.status === "executed"
-                ? `Captured from your PayPal hold and paid to ${r.supplierName}.`
+                ? v.payoutQueued
+                  ? `Captured from your PayPal hold. The payout to ${r.supplierName} goes out as soon as PayPal clears the funds.`
+                  : `Captured from your PayPal hold and paid to ${r.supplierName}.`
                 : `Status: ${r.status}.`
               : `Nothing was paid to ${r.supplierName}.`}
           </p>
+          {v.failure ? <p className="text-block text-sm">PayPal said: {v.failure}</p> : null}
           <div className="mt-2 flex flex-wrap justify-center gap-2">
             {v.receiptId ? (
               <Link

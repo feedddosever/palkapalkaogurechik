@@ -12,6 +12,8 @@ export async function GET() {
     return Response.json({
       ok: true,
       db: kind,
+      /** The deployed commit (Render sets RENDER_GIT_COMMIT). */
+      commit: process.env.RENDER_GIT_COMMIT?.slice(0, 7) ?? null,
       features: publicFeatureSnapshot(),
       /** Claude is configured but today's AI_DAILY_BUDGET_USD is used up (offline until 00:00 UTC). */
       aiBudgetReached: aiBudgetReached(),

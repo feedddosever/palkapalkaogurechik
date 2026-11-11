@@ -235,12 +235,21 @@ export async function approvalView(approvalId: string) {
     .select({ id: t.receipts.id })
     .from(t.receipts)
     .where(eq(t.receipts.requestId, req.id));
+  const ops = await db
+    .select({ op: t.paypalOperations.op, status: t.paypalOperations.status, error: t.paypalOperations.error })
+    .from(t.paypalOperations)
+    .where(eq(t.paypalOperations.requestId, req.id))
+    .orderBy(desc(t.paypalOperations.createdAt));
   const market: { name: string; median: string; unitPrice: string }[] = [];
   for (const i of req.items) {
     const q = await marketQuoteFor({ sku: i.sku, category: i.category, title: i.name });
     if (q) market.push({ name: i.name, median: q.median, unitPrice: i.unitPrice });
   }
   return {
+    /** Why PayPal refused, when the payment failed after approval. */
+    failure: req.status === "failed" ? (ops.find((o) => o.status === "ERROR")?.error ?? null) : null,
+    /** Captured, with the supplier payout waiting for PayPal to clear the funds. */
+    payoutQueued: ops.some((o) => o.op === "payout" && o.status === "QUEUED"),
     approval,
     request: req,
     layers: layers.filter((l) => l.layer !== "combined"),
