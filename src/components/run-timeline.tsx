@@ -276,7 +276,9 @@ function EventItem({ event, last, lab }: { event: AgentEvent; last: boolean; lab
           meta={time}
           last={last}
         >
-          Captured from the PayPal hold and paid out to the supplier.{" "}
+          {p.payoutQueued
+            ? "Captured from the PayPal hold; the supplier payout goes out as soon as PayPal clears the funds."
+            : "Captured from the PayPal hold and paid out to the supplier."}{" "}
           {p.receiptId ? (
             <Link
               href={`/verify/${String(p.receiptId)}`}

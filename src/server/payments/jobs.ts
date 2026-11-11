@@ -13,6 +13,7 @@ import {
   type TransactionSummary,
 } from "@/server/paypal";
 import { closeCycle, getActiveMandate, startCycle } from "./cycles";
+import { sendQueuedPayouts } from "./service";
 
 /**
  * Allowance cycle jobs, run by the scheduler (and by "End week now", which runs the same code):
@@ -371,6 +372,8 @@ export type JobsReport = {
   reauthorized: string[];
   renewed: { cycleId: string; nextCycleId: string | null; how: RenewResult["how"] }[];
   closedIdle: string[];
+  /** Requests whose queued supplier payout went out on this tick. */
+  payoutsSent: string[];
   reconciled: { workspaceId: string; checked: number; matched: number; issues: number }[];
   errors: { cycleId?: string; workspaceId?: string; error: string }[];
 };
@@ -400,8 +403,24 @@ export async function runCycleJobs(
   db: DB,
   { paypal = getPayPal(), now = new Date() }: Opts = {},
 ): Promise<JobsReport> {
-  const report: JobsReport = { reauthorized: [], renewed: [], closedIdle: [], reconciled: [], errors: [] };
+  const report: JobsReport = {
+    reauthorized: [],
+    renewed: [],
+    closedIdle: [],
+    payoutsSent: [],
+    reconciled: [],
+    errors: [],
+  };
   const idleMs = env.DEMO_HOLD_IDLE_HOURS * 60 * 60 * 1000;
+
+  // Supplier payouts that waited for PayPal to clear the merchant's funds.
+  try {
+    const payouts = await sendQueuedPayouts(db, { paypal });
+    report.payoutsSent = payouts.sent;
+    for (const e of payouts.errors) report.errors.push({ error: `Payout ${e}` });
+  } catch (err) {
+    report.errors.push({ error: `Queued payouts: ${err instanceof Error ? err.message : String(err)}` });
+  }
   const active = await db
     .select({ cycle: t.cycles, kind: t.workspaces.kind })
     .from(t.cycles)

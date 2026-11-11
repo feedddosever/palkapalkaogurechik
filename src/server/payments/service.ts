@@ -69,7 +69,15 @@ export type RefundInput = {
 };
 
 export type ExecutionResult =
-  { ok: true; captureId: string; payoutBatchId: string; receiptId: string } | { ok: false; error: string };
+  | {
+      ok: true;
+      captureId: string;
+      payoutBatchId: string;
+      receiptId: string;
+      /** Captured, but PayPal hasn't cleared the merchant's funds yet: the cycle jobs send the payout. */
+      payoutQueued?: boolean;
+    }
+  | { ok: false; error: string };
 
 export type SubmitResult = {
   requestId: string;
@@ -558,8 +566,29 @@ export async function executePayment(
       if (err instanceof PayPalError && err.code === "DUPLICATE_PAYOUT") {
         return { batchId: `pay-${req.id}`, status: "SUCCESS" as const };
       }
+      // The money is captured, but PayPal hasn't made it available to send yet (funds still
+      // clearing). The payment stands; the supplier payout is queued and the cycle jobs retry it
+      // with the same sender_batch_id, so it can never go out twice.
+      if (err instanceof PayPalError && err.code === "INSUFFICIENT_FUNDS") {
+        return { batchId: `pay-${req.id}`, status: "QUEUED" as const };
+      }
       throw err;
     });
+    const payoutQueued = payout.status === "QUEUED";
+    if (payoutQueued) {
+      await db.insert(t.paypalOperations).values({
+        id: newId("ppo"),
+        workspaceId: req.workspaceId,
+        requestId,
+        cycleId: cycle.id,
+        op: "payout",
+        mode: paypal.mode,
+        requestKey: `pay-${req.id}`,
+        status: "QUEUED",
+        amount: req.amount,
+        raw: { receiptId, summary },
+      });
+    }
     await db
       .update(t.paymentRequests)
       .set({ status: "executed", executedAt: new Date() })
@@ -580,12 +609,76 @@ export async function executePayment(
     } catch (err) {
       console.error(`[leash] receipt ${receiptId} for ${requestId} could not be issued:`, err);
     }
-    return { ok: true, captureId, payoutBatchId: payout.batchId, receiptId };
+    return { ok: true, captureId, payoutBatchId: payout.batchId, receiptId, payoutQueued };
   } catch (err) {
     return fail(
       `Captured ${captureId} but the supplier payout failed: ${err instanceof PayPalError ? err.code : String(err)}`,
     );
   }
+}
+
+/**
+ * Sends supplier payouts that were queued because PayPal hadn't cleared the merchant's funds yet.
+ * Same sender_batch_id as the first attempt, so a payout that did go out is never sent twice.
+ */
+export async function sendQueuedPayouts(
+  db: DB,
+  { paypal = getPayPal(), limit = 25 }: { paypal?: PayPalGateway; limit?: number } = {},
+): Promise<{ sent: string[]; stillQueued: number; errors: string[] }> {
+  const queued = await db
+    .select()
+    .from(t.paypalOperations)
+    .where(and(eq(t.paypalOperations.op, "payout"), eq(t.paypalOperations.status, "QUEUED")))
+    .limit(limit);
+  const out = { sent: [] as string[], stillQueued: 0, errors: [] as string[] };
+  for (const op of queued) {
+    if (!op.requestId || op.mode !== paypal.mode) continue;
+    const [req] = await db.select().from(t.paymentRequests).where(eq(t.paymentRequests.id, op.requestId));
+    if (!req) continue;
+    const { receiptId, summary } = (op.raw ?? {}) as { receiptId?: string; summary?: string };
+    const batchId = `pay-${req.id}`;
+    try {
+      const payout = await paypal
+        .createPayout({
+          senderBatchId: batchId,
+          emailSubject: `Payment from Bean There Café via Leash`,
+          items: [
+            {
+              receiver: payoutReceiver(req.payeeEmail, paypal),
+              amount: req.amount,
+              currency: req.currency,
+              note: `${summary ?? req.supplierName} (Leash receipt ${receiptId ?? ""})`.slice(0, 4000),
+              senderItemId: req.id,
+            },
+          ],
+        })
+        .catch((err: unknown) => {
+          if (err instanceof PayPalError && err.code === "DUPLICATE_PAYOUT") {
+            return { batchId, status: "SUCCESS" as const, debugId: undefined };
+          }
+          throw err;
+        });
+      await db
+        .update(t.paypalOperations)
+        .set({
+          status: payout.status,
+          paypalId: payout.batchId,
+          debugId: payout.debugId ?? null,
+          error: null,
+        })
+        .where(eq(t.paypalOperations.id, op.id));
+      out.sent.push(req.id);
+    } catch (err) {
+      if (err instanceof PayPalError && err.code === "INSUFFICIENT_FUNDS") {
+        out.stillQueued++;
+        continue;
+      }
+      const message = err instanceof PayPalError ? `${err.code}: ${err.message}` : String(err);
+      await db.update(t.paypalOperations).set({ error: message }).where(eq(t.paypalOperations.id, op.id));
+      out.errors.push(`${req.id}: ${message}`);
+    }
+  }
+  return out;
 }
 
 /** The owner's decision on a payment that needed approval. Approving executes it. */
