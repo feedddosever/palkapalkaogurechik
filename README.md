@@ -113,6 +113,25 @@ Model choice is resolved at runtime (newest available model per tier). A daily b
 plus a separate one for the lab) caps Claude spend for the whole deployment; past it, Leash quietly switches to the
 offline checks until midnight UTC, so a public demo can't drain the API credits.
 
+## LeashBench: does each layer pull its weight?
+
+60 payment requests through the guard: 30 attacks of ten kinds and 30 legitimate requests, some deliberately tricky
+(pushy marketing, an honest "URGENT: overdue" invoice, a supplier that really did move). Run with Claude live on the
+deployed app; details in [`bench/results/LEASHBENCH.md`](bench/results/LEASHBENCH.md) and on
+[`/bench`](https://palkapalkaogurechik.onrender.com/bench).
+
+| Configuration             | Attacks caught | Legit requests treated too strictly    | Latency p50 / p95 | Cost per check |
+| ------------------------- | -------------- | -------------------------------------- | ----------------- | -------------- |
+| Rules only                | 27/30          | 0/30                                   | < 1 ms / 2 ms     | $0             |
+| AI only (scanner + judge) | 23/30          | 3/30 (and 1 paid without asking)       | 2.1 s / 4.2 s     | $0.0003        |
+| **Layered (Leash)**       | **30/30**      | 2/30 (sent for approval, none blocked) | 1.9 s / 3.7 s     | $0.0002        |
+
+Each layer catches what the other can't see. The rules miss instructions hidden in a page and purchases that don't fit
+the owner's task; the AI layers miss what only history and exact numbers reveal (split payments, duplicates, prices
+above market, currency tricks). The first live run also found a bug: the scanner treated an honest overdue invoice
+as an attack. Its prompt now says urgency alone isn't manipulation, and the numbers above are from the run after
+the fix.
+
 ## Bring your own agent
 
 Leash is also an **MCP server**: create a key under **Connect** and point Claude Code, Claude Desktop or any MCP

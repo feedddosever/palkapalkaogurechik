@@ -89,6 +89,8 @@ Dana owns Bean There Café. Her ops agent restocks coffee, oat milk and cups, an
 - The guard holds even when the agent itself is fully hijacked (the Attack Lab proves it, publicly).
 - Signed, verifiable receipts tie the owner's words to the PayPal transaction ids.
 - Any MCP agent, and the PayPal Agent Toolkit, can sit behind the same guard.
+- LeashBench: 60 scenarios with Claude live. Rules alone catch 27/30 attacks and the AI layers alone 23/30; layered,
+  Leash catches all 30 and blocks none of the 30 legitimate requests.
 
 ## What we learned
 
@@ -129,7 +131,8 @@ Deadline: **Thu Nov 12, 3:00 PM EST** (21:00 CET).
 
 - [x] Live demo on Render with the PayPal sandbox and Claude (`/api/health`: `paypalLive` and `aiLive` true)
 - [x] E2E suite green against the live site (`E2E_BASE_URL=… E2E_SANDBOX=1 npx playwright test --project=desktop`)
-- [ ] LeashBench with Claude: `npm run bench -- --publish`, then the numbers go into the README
+- [x] LeashBench with Claude, published in the README and on `/bench` (layered: 30/30 attacks caught, none of
+      the legitimate requests blocked)
 - [x] Screenshots retaken with Claude live: `npm run capture -- --shots`
 - [x] PayPal checkout pinned to English for every buyer account (`PAYPAL_CHECKOUT_LOCALE`, default `en-US`)
 - [x] Test buyer topped up with $1,500 of sandbox money (`npm run sandbox:topup -- <usd>`; each demo story

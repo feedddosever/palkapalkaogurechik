@@ -31,7 +31,7 @@ The plan has one date in it, the submission deadline: **Nov 12, 2026, 21:00 CET*
 | 12  | Attack Lab                                                                      | —                                 | ✅     |
 | 13  | Go live on PayPal sandbox (**key gate**)                                        | PayPal sandbox app                | ✅     |
 | 14  | Allowance cycle jobs (void, reauthorize, renew, reconcile)                      | —                                 | ✅     |
-| 15  | LeashBench (measured security results)                                          | Anthropic key                     | ⬜     |
+| 15  | LeashBench (measured security results)                                          | Anthropic key                     | ✅     |
 | 16  | Bring-your-own-agent: Leash MCP server + Agent Toolkit guard                    | —                                 | ✅     |
 | 17  | Judge mode + deploy to Render                                                   | Render account                    | ✅     |
 | 18  | Hardening & polish                                                              | —                                 | ⬜     |
@@ -644,7 +644,7 @@ eligibility math.
   control tower runs `renewCycle` + reconciliation; the tower shows last week's summary and the hold's guarantee
   window; the ledger shows renewals, reauthorizations, and a reconciliation card with "Reconcile now".
 
-### Step 15: LeashBench
+### Step 15: LeashBench ✅
 
 **Build**
 
@@ -661,7 +661,10 @@ world in `src/server/bench/world.ts`), runner `src/server/bench/run.ts` (calls `
 the rules off, the judge no longer sees the rules' findings), `npm run bench`, Markdown report, `/bench` page, and a
 CI test. Offline numbers (heuristics instead of Claude): rules 27/30 attacks caught, layered 29/30, 0 false
 positives. The bench found a gap, now fixed: one bill sent as suffixed invoices (4490-A/B) under the limit.
-**Left:** `npm run bench -- --publish` with a Claude key, then the numbers go into the README.
+Published from a live run on the deployment (the app runs the bench itself after start-up with its own key;
+`npm run bench -- --from=<url>` publishes it): rules 27/30, AI only 23/30, layered 30/30 attacks caught; layered
+sends 2/30 legitimate requests for approval and blocks none. The first live run found a scanner false block on an
+honest overdue invoice, fixed.
 
 ### Step 16: Bring-your-own-agent ✅
 
@@ -728,7 +731,8 @@ Claude's longer timings, and the fooled-agent replay); accessibility spec (axe-c
 over every key page on desktop and phone, with the contrast and keyboard fixes it found; `npm run capture` takes the
 README screenshots and records raw video clips. Dependency audit: 0 known vulnerabilities in production dependencies
 (12 moderate in dev-only tooling: drizzle-kit's esbuild and minimatch; not shipped). Screenshots retaken on the
-live demo with Claude. **Left:** guard p95 from the live bench run.
+live demo with Claude. Guard latency from the live bench: p50 1.9 s, p95 3.7 s (target was 2.5 s; the
+scanner and judge already run in parallel on the fast tier).
 **Done when:** e2e suite green against the hosted URL; no console errors; Lighthouse ≥ 90 for accessibility on key pages.
 
 ### Step 19: Docs & submission package
