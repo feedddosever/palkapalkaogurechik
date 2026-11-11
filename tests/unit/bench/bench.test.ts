@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { runBench } from "@/server/bench/run";
+import { scenarioFingerprint } from "@/server/bench/auto";
 import { benchMarkdown } from "@/server/bench/report";
 import { ATTACK_KINDS, SCENARIOS } from "@/server/bench/scenarios";
 
@@ -23,5 +24,10 @@ describe("LeashBench", () => {
     expect(layered.attacks.caught).toBeGreaterThanOrEqual(rules.attacks.caught);
     expect(layered.legit.falsePositives).toBe(0);
     expect(benchMarkdown(report)).toContain("| Rules only |");
+  });
+
+  it("fingerprints the scenario set deterministically (a server re-runs only when it changes)", () => {
+    expect(scenarioFingerprint()).toMatch(/^[0-9a-f]{16}$/);
+    expect(scenarioFingerprint()).toBe(scenarioFingerprint());
   });
 });

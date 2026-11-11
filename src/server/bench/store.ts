@@ -22,9 +22,13 @@ export async function startBenchRun(db: DB): Promise<string> {
   return id;
 }
 
-export async function executeBenchRun(db: DB, id: string, { concurrency = 2 } = {}): Promise<void> {
+export async function executeBenchRun(
+  db: DB,
+  id: string,
+  { concurrency = 2, fingerprint }: { concurrency?: number; fingerprint?: string } = {},
+): Promise<void> {
   try {
-    const report = await runBench({ ai: true, concurrency });
+    const report = { ...(await runBench({ ai: true, concurrency })), fingerprint };
     await db
       .update(benchReports)
       .set({ status: "done", report, finishedAt: new Date() })

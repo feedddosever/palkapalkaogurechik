@@ -60,6 +60,8 @@ export type BenchReport = {
   scenarios: number;
   /** live = Claude ran the scanner and judge; offline = heuristics stood in (no API key). */
   aiMode: "live" | "offline";
+  /** Which version of the scenario set ran (server-side runs). */
+  fingerprint?: string;
   configs: ConfigReport[];
 };
 

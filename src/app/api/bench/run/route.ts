@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { isAdminRequest } from "@/server/admin";
+import { scenarioFingerprint } from "@/server/bench/auto";
 import { benchRunning, executeBenchRun, startBenchRun } from "@/server/bench/store";
 import { getDb } from "@/server/db/client";
 import { features } from "@/server/env";
@@ -20,6 +21,6 @@ export async function POST(req: Request) {
   if (running) return Response.json({ error: "A run is already in progress.", id: running }, { status: 409 });
   const db = await getDb();
   const id = await startBenchRun(db);
-  after(() => executeBenchRun(db, id));
+  after(() => executeBenchRun(db, id, { fingerprint: scenarioFingerprint() }));
   return Response.json({ id, status: "running", poll: "/api/bench/latest" }, { status: 202 });
 }
