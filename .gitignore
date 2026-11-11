@@ -37,3 +37,6 @@ coverage/
 
 # Raw demo-video clips (npm run capture -- --video)
 video/
+
+# Local one-off scripts
+scripts/.tmp/

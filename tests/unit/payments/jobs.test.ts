@@ -179,3 +179,31 @@ describe("the scheduled tick", () => {
     expect(today.reconciled.find((r) => r.workspaceId === used.workspaceId)).toMatchObject({ issues: 0 });
   });
 });
+
+describe("idle demo cafés", () => {
+  it("releases the hold of a café idle for 2 hours, mid-week, and places no new one", async () => {
+    const HOUR = 60 * 60 * 1000;
+    clock = new Date();
+    const db = await getDb();
+    const idle = await funded();
+    const busy = await funded();
+    clock = new Date(clock.getTime() + 3 * HOUR);
+    await db.insert(t.agentRuns).values({
+      id: `run_busy_${Date.now()}`,
+      workspaceId: busy.workspaceId,
+      agentId: busy.agentId,
+      task: "Weekly restock",
+      status: "succeeded",
+      startedAt: new Date(clock.getTime() - HOUR),
+    });
+
+    const report = await runCycleJobs(db, { paypal: sim, now: clock });
+    expect(report.closedIdle).toContain(idle.cycle.id);
+    expect(report.closedIdle).not.toContain(busy.cycle.id);
+    expect(report.renewed.map((r) => r.cycleId)).not.toContain(idle.cycle.id);
+    expect(await getActiveCycle(db, idle.agentId)).toBeFalsy();
+    expect(await getActiveCycle(db, busy.agentId)).toBeTruthy();
+    const auth = await sim.getAuthorization(idle.cycle.paypalAuthorizationId!);
+    expect(auth.status).toBe("VOIDED");
+  });
+});

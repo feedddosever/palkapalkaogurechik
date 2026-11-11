@@ -31,6 +31,9 @@ services:
         value: "3"
       - key: AI_DAILY_BUDGET_USD
         value: "5"
+      # The cron job below runs the cycle jobs; the web service doesn't also run them.
+      - key: CYCLE_JOBS_IN_PROCESS
+        value: "off"
       # PayPal sandbox app (developer.paypal.com → Apps & Credentials, Sandbox).
       - key: PAYPAL_CLIENT_ID
         sync: false

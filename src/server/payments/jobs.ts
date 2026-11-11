@@ -3,6 +3,8 @@ import { newId } from "@/lib/ids";
 import { fromCents, normalizeAmount, toCents } from "@/lib/money";
 import type { DB } from "@/server/db/client";
 import * as t from "@/server/db/schema";
+import { env } from "@/server/env";
+import { isSeededCycle } from "@/server/seed/seed";
 import {
   getPayPal,
   PayPalError,
@@ -377,11 +379,29 @@ export type JobsReport = {
  * One pass over every hold. Lab and bench sandboxes are skipped; an idle agent's budget is closed,
  * not renewed (Leash doesn't renew money nobody used).
  */
+/** The latest sign of life in a cycle: the hold itself, an agent run, or a payment request. */
+async function lastActivity(db: DB, cycle: typeof t.cycles.$inferSelect): Promise<number> {
+  const [run] = await db
+    .select({ at: t.agentRuns.startedAt })
+    .from(t.agentRuns)
+    .where(eq(t.agentRuns.agentId, cycle.agentId))
+    .orderBy(desc(t.agentRuns.startedAt))
+    .limit(1);
+  const [req] = await db
+    .select({ at: t.paymentRequests.createdAt })
+    .from(t.paymentRequests)
+    .where(eq(t.paymentRequests.cycleId, cycle.id))
+    .orderBy(desc(t.paymentRequests.createdAt))
+    .limit(1);
+  return Math.max(cycle.startsAt.getTime(), run?.at.getTime() ?? 0, req?.at.getTime() ?? 0);
+}
+
 export async function runCycleJobs(
   db: DB,
   { paypal = getPayPal(), now = new Date() }: Opts = {},
 ): Promise<JobsReport> {
   const report: JobsReport = { reauthorized: [], renewed: [], closedIdle: [], reconciled: [], errors: [] };
+  const idleMs = env.DEMO_HOLD_IDLE_HOURS * 60 * 60 * 1000;
   const active = await db
     .select({ cycle: t.cycles, kind: t.workspaces.kind })
     .from(t.cycles)
@@ -400,6 +420,15 @@ export async function runCycleJobs(
         const out = await renewCycle(db, cycle.id, { paypal, now, placeNext: Boolean(run) });
         if (out.how === "none") report.closedIdle.push(cycle.id);
         else report.renewed.push({ cycleId: cycle.id, nextCycleId: out.next?.id ?? null, how: out.how });
+      } else if (
+        idleMs > 0 &&
+        !isSeededCycle(cycle) &&
+        (await lastActivity(db, cycle)) <= now.getTime() - idleMs
+      ) {
+        // A demo café nobody is using: give the shared sandbox buyer's money back now rather than
+        // at the end of the week, and don't place another hold.
+        await renewCycle(db, cycle.id, { paypal, now, placeNext: false });
+        report.closedIdle.push(cycle.id);
       } else {
         const r = await reauthorizeIfDue(db, cycle.id, { paypal, now });
         if (r.status === "reauthorized") report.reauthorized.push(cycle.id);

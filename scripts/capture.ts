@@ -21,15 +21,30 @@ const VIDEO = process.env.CAPTURE_DIR ?? "video";
 
 const log = (msg: string) => console.log(`${new Date().toISOString().slice(11, 19)}  ${msg}`);
 
-async function desktop(browser: Browser, name: string): Promise<BrowserContext> {
-  return browser.newContext({
+async function desktop(
+  browser: Browser,
+  name: string,
+  extra: { storageState?: Awaited<ReturnType<BrowserContext["storageState"]>> } = {},
+): Promise<BrowserContext> {
+  const context = await browser.newContext({
     baseURL: BASE,
-    // Video: 1536×864 CSS px recorded at 1920×1080 reads like a 125% zoom.
-    viewport: mode === "video" ? { width: 1536, height: 864 } : { width: 1280, height: 860 },
+    storageState: extra.storageState,
+    // Video frames are the viewport's size (Playwright pads, never scales), so record at 1920×1080.
+    viewport: mode === "video" ? { width: 1920, height: 1080 } : { width: 1280, height: 860 },
     deviceScaleFactor: mode === "video" ? 1 : 2,
     recordVideo:
       mode === "video" ? { dir: path.join(VIDEO, name), size: { width: 1920, height: 1080 } } : undefined,
   });
+  if (mode === "video") {
+    // Leash's own pages at 125% so text reads on a phone-sized video; PayPal's pages stay as they are.
+    await context.addInitScript((host) => {
+      if (location.host !== host) return;
+      const apply = () => document.documentElement?.style.setProperty("zoom", "1.25");
+      apply();
+      document.addEventListener("readystatechange", apply);
+    }, new URL(BASE).host);
+  }
+  return context;
 }
 
 async function shot(page: Page, file: string, opts: { full?: boolean; maxHeight?: number } = {}) {
@@ -149,16 +164,7 @@ async function main() {
   await finish(phone, "03-phone");
 
   // Shots 7–10: Attack Lab, ledger, end of week, connect.
-  ctx = await browser.newContext({
-    baseURL: BASE,
-    storageState: state,
-    viewport: mode === "video" ? { width: 1536, height: 864 } : { width: 1280, height: 860 },
-    deviceScaleFactor: mode === "video" ? 1 : 2,
-    recordVideo:
-      mode === "video"
-        ? { dir: path.join(VIDEO, "04-rest"), size: { width: 1920, height: 1080 } }
-        : undefined,
-  });
+  ctx = await desktop(browser, "04-rest", { storageState: state });
   page = await ctx.newPage();
   await page.goto("/lab");
   await beat(page);

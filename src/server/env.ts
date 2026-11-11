@@ -71,6 +71,10 @@ const schema = z.object({
   LAB_DAILY_BUDGET_USD: z.coerce.number().nonnegative().default(5),
   /** Lab runs allowed per visitor in 10 minutes. */
   LAB_RUNS_PER_CLIENT: z.coerce.number().int().positive().default(6),
+  /** Demo cafés idle this long have their PayPal hold voided by the cycle jobs (0 = only at week's end). */
+  DEMO_HOLD_IDLE_HOURS: z.coerce.number().nonnegative().default(2),
+  /** Run the cycle jobs inside the web server (hourly), for hosts without a cron job. */
+  CYCLE_JOBS_IN_PROCESS: z.enum(["on", "off"]).default("on"),
   /** Fresh demo cafés (/demo) allowed per visitor per hour. */
   DEMO_PER_CLIENT_HOURLY: z.coerce.number().int().positive().default(15),
 });
