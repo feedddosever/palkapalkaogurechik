@@ -734,6 +734,11 @@ README screenshots and records raw video clips. Dependency audit: 0 known vulner
 live demo with Claude. Guard latency from the live bench: p50 1.9 s, p95 3.7 s (target was 2.5 s; the
 scanner and judge already run in parallel on the fast tier).
 **Done when:** e2e suite green against the hosted URL; no console errors; Lighthouse ≥ 90 for accessibility on key pages.
+Also from the live checks: idle demo holds are released after 2 hours and the cycle jobs run in the web server on
+the free plan (abandoned holds had tied up the shared sandbox buyer's balance); a captured payment stays paid when
+PayPal hasn't cleared the merchant's funds for the supplier payout (queued, sent by the cycle jobs); the approval
+page shows PayPal's error when a payment fails; PayPal's checkout opens in English (the sign-in page; after sign-in
+PayPal uses the buyer account's own language).
 
 ### Step 19: Docs & submission package
 
@@ -756,6 +761,9 @@ scanner and judge already run in parallel on the fast tier).
 
 Details are agreed with the owner when we reach this step. Prepared by me: script + shot list (≤ 2:50), Playwright-scripted
 screen captures of every scene, captions. Owner: voiceover and YouTube upload (public).
+
+**Progress:** raw clips recorded on the live demo with `npm run capture -- --video` (`video/`, git-ignored:
+landing 5 s, story 85 s, phone 14 s, the rest 53 s). **Left (owner):** voiceover, edit to the shot list, upload.
 
 ### Step 21: Submit
 

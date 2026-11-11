@@ -126,6 +126,8 @@ deployed app; details in [`bench/results/LEASHBENCH.md`](bench/results/LEASHBENC
 | AI only (scanner + judge) | 23/30          | 3/30 (and 1 paid without asking)       | 2.1 s / 4.2 s     | $0.0003        |
 | **Layered (Leash)**       | **30/30**      | 2/30 (sent for approval, none blocked) | 1.9 s / 3.7 s     | $0.0002        |
 
+![LeashBench on /bench: layered catches 30 of 30 attacks; rules only 27, AI only 23](docs/images/bench.png)
+
 Each layer catches what the other can't see. The rules miss instructions hidden in a page and purchases that don't fit
 the owner's task; the AI layers miss what only history and exact numbers reveal (split payments, duplicates, prices
 above market, currency tricks). The first live run also found a bug: the scanner treated an honest overdue invoice
