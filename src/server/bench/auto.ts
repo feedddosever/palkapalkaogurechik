@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { benchReports } from "@/server/db/schema";
 import { features } from "@/server/env";
@@ -38,15 +38,17 @@ export async function maybeRunBenchOnStart(): Promise<string | null> {
     .limit(5);
   if (done.some((r) => (r.report as { fingerprint?: string } | null)?.fingerprint === fingerprint))
     return null;
-  // Another instance (or one a restart cut off) may be on it; give that 30 minutes.
-  const [recent] = await db
-    .select({ id: benchReports.id })
-    .from(benchReports)
-    .where(
-      and(eq(benchReports.status, "running"), gt(benchReports.createdAt, new Date(Date.now() - 30 * 60_000))),
-    )
-    .limit(1);
-  if (recent) return null;
+  // A run started before this process did belonged to an instance a deploy or restart has replaced
+  // (it will be stopped, if it isn't already): record it as cut off and run again here.
+  const processStart = new Date(Date.now() - process.uptime() * 1000);
+  await db
+    .update(benchReports)
+    .set({
+      status: "failed",
+      error: "Interrupted: the server restarted during this run.",
+      finishedAt: new Date(),
+    })
+    .where(and(eq(benchReports.status, "running"), lt(benchReports.createdAt, processStart)));
   const id = await startBenchRun(db);
   await executeBenchRun(db, id, { fingerprint });
   return id;
