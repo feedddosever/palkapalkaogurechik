@@ -131,8 +131,11 @@ Deadline: **Thu Nov 12, 3:00 PM EST** (21:00 CET).
 - [x] E2E suite green against the live site (`E2E_BASE_URL=… E2E_SANDBOX=1 npx playwright test --project=desktop`)
 - [ ] LeashBench with Claude: `npm run bench -- --publish`, then the numbers go into the README
 - [x] Screenshots retaken with Claude live: `npm run capture -- --shots`
-- [ ] Judges' PayPal buyer: an English-language (US) sandbox personal account with a large balance, set as
-      `JUDGE_BUYER_EMAIL` / `JUDGE_BUYER_PASSWORD` on Render (the current one is Italian and its balance is low)
+- [x] PayPal checkout pinned to English for every buyer account (`PAYPAL_CHECKOUT_LOCALE`, default `en-US`)
+- [x] Test buyer topped up with $1,500 of sandbox money (`npm run sandbox:topup -- <usd>`; each demo story
+      captures about $409, so top up again before judging)
+- [ ] Optional: a US sandbox personal account with a large balance as the judges' buyer (`JUDGE_BUYER_EMAIL` /
+      `JUDGE_BUYER_PASSWORD` on Render); the current Italian one works, with English pages
 - [ ] Video: `npm run capture -- --video`, voiceover per `docs/VIDEO.md`, YouTube (Public); link in the README and
       above
 - [ ] Merge the pull request into `main` and tag `v1.0.0`
