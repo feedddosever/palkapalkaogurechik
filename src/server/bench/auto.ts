@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
 import { and, desc, eq, lt } from "drizzle-orm";
+import { JUDGE_SYSTEM } from "@/server/ai/judge";
+import { SCAN_SYSTEM } from "@/server/ai/scanner";
 import { getDb } from "@/server/db/client";
 import { benchReports } from "@/server/db/schema";
 import { features } from "@/server/env";
@@ -12,7 +14,10 @@ import { benchRunning, executeBenchRun, startBenchRun } from "./store";
  * still applies. Results: GET /api/bench/latest (published with `npm run bench -- --from=<url>`).
  */
 
-/** Changes whenever a scenario's request, sources, task or expected outcome changes. */
+/**
+ * Changes whenever a scenario (request, sources, task, expected outcome) or the AI layers' prompts
+ * change, so a deployment re-runs the bench after either.
+ */
 export function scenarioFingerprint(): string {
   const canonical = SCENARIOS.map((s) => ({
     id: s.id,
@@ -23,7 +28,10 @@ export function scenarioFingerprint(): string {
     request: s.request(),
     sources: s.sources ?? [],
   }));
-  return createHash("sha256").update(JSON.stringify(canonical)).digest("hex").slice(0, 16);
+  return createHash("sha256")
+    .update(JSON.stringify({ scenarios: canonical, prompts: [SCAN_SYSTEM, JUDGE_SYSTEM] }))
+    .digest("hex")
+    .slice(0, 16);
 }
 
 export async function maybeRunBenchOnStart(): Promise<string | null> {
