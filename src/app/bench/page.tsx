@@ -116,7 +116,13 @@ async function Results() {
           </Card>
         ))}
       </div>
-      <div className="border-border overflow-x-auto rounded-lg border">
+      <div
+        // Focusable so keyboard users can scroll the table sideways on small screens.
+        tabIndex={0}
+        role="region"
+        aria-label="Attacks caught by kind"
+        className="border-border focus-visible:ring-primary overflow-x-auto rounded-lg border focus-visible:ring-2 focus-visible:outline-none"
+      >
         <table className="w-full min-w-[32rem] text-sm">
           <caption className="sr-only">Attacks caught by kind and configuration</caption>
           <thead className="bg-surface-muted text-muted text-left">
