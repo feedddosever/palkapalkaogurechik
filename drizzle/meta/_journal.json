@@ -57,6 +57,13 @@
       "when": 1794320485966,
       "tag": "0007_ai_spend",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794406837520,
+      "tag": "0008_bench_reports",
+      "breakpoints": true
     }
   ]
 }

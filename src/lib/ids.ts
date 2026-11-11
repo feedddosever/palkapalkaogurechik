@@ -22,6 +22,7 @@ export type IdPrefix =
   | "tre"
   | "whk"
   | "lab"
+  | "bench"
   | "plant"
   | "rcn"
   | "key";

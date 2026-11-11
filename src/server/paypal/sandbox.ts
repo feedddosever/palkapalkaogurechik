@@ -16,6 +16,7 @@ import {
   type PaymentAuthorization,
 } from "@paypal/paypal-server-sdk";
 import { normalizeAmount } from "@/lib/money";
+import { env } from "@/server/env";
 import {
   AUTHORIZATION_VALID_DAYS,
   duplicatePayout,
@@ -88,6 +89,8 @@ export class SandboxPayPal implements PayPalGateway {
             paypal: {
               experienceContext: {
                 brandName: input.brandName ?? "Leash",
+                // Judges see PayPal's checkout in English whatever the buyer account's country.
+                locale: env.PAYPAL_CHECKOUT_LOCALE,
                 returnUrl: input.returnUrl,
                 cancelUrl: input.cancelUrl,
                 shippingPreference: PaypalWalletContextShippingPreference.NoShipping,

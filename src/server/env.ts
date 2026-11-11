@@ -62,6 +62,8 @@ const schema = z.object({
   // (sandbox-only credentials, shown on the onboarding page on purpose).
   JUDGE_BUYER_EMAIL: optional,
   JUDGE_BUYER_PASSWORD: optional,
+  /** Language of PayPal's checkout pages (BCP 47), whatever the buyer account's country. */
+  PAYPAL_CHECKOUT_LOCALE: z.string().default("en-US"),
 
   // Attack Lab (public): on = normal; offline = never call Claude from the lab; off = kill switch.
   LAB_MODE: z.enum(["on", "offline", "off"]).default("on"),

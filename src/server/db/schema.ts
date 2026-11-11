@@ -654,6 +654,18 @@ export const aiSpend = pgTable("ai_spend", {
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
 
+// ─── LeashBench reports ─────────────────────────────────────────────────────
+
+/** LeashBench runs made on the server (POST /api/bench/run), where the Claude key lives. */
+export const benchReports = pgTable("bench_reports", {
+  id: text("id").primaryKey(),
+  status: text("status", { enum: ["running", "done", "failed"] }).notNull(),
+  report: jsonb("report"),
+  error: text("error"),
+  createdAt: createdAt(),
+  finishedAt: ts("finished_at"),
+});
+
 // ─── Receipt signing keys ───────────────────────────────────────────────────
 
 /**

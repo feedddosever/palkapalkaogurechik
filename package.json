@@ -26,6 +26,7 @@
     "jobs:cycles": "tsx scripts/cycle-jobs.ts",
     "mcp:stdio": "tsx mcp/stdio.ts",
     "spike:paypal": "tsx scripts/spike-paypal.ts --vault",
+    "sandbox:topup": "tsx scripts/sandbox-topup.ts",
     "keys:generate": "tsx scripts/keys-generate.ts"
   },
   "dependencies": {
