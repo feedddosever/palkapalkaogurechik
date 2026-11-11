@@ -133,6 +133,10 @@ events, reconciliations, API keys, and the lab's runs and planted text.
 ## Deployment
 
 `render.yaml` defines the web service (migrations before deploy, `/api/health` check), Postgres, and an hourly cron
-job that calls the CRON_SECRET-protected scheduler endpoint over Render's private network. Each `/demo` visit gets an
+job that calls the CRON_SECRET-protected scheduler endpoint over Render's private network. On the free plan
+(`render-free.yaml`, no cron) the web server runs the same cycle jobs itself, 90 seconds after start-up and then
+hourly; they also void the hold of any demo café idle for two hours, so the shared sandbox buyer's money isn't tied
+up. With Claude live, the deployment also runs LeashBench once after start-up whenever the scenarios or the AI
+prompts have changed (`GET /api/bench/latest`). Each `/demo` visit gets an
 isolated workspace; public entry points are rate limited, and a daily budget caps Claude spend for the whole
 deployment (past it, the guard and agent use their offline fallbacks until midnight UTC).
