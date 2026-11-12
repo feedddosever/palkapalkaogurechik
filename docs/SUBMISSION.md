@@ -139,6 +139,8 @@ Deadline: **Thu Nov 12, 3:00 PM EST** (21:00 CET).
       captures about $409, so top up again before judging)
 - [ ] Optional: a US sandbox personal account with a large balance as the judges' buyer (`JUDGE_BUYER_EMAIL` /
       `JUDGE_BUYER_PASSWORD` on Render); the current Italian one works, with English pages
+- [x] Sandbox merchant holds a USD balance, so USD captures aren't converted to EUR and supplier payouts go out
+      (it's an EUR account: without a USD balance PayPal converted every capture and USD payouts were refused)
 - [x] Video clips recorded on the live demo (`npm run capture -- --video`, in `video/`)
 - [ ] Video: voiceover per `docs/VIDEO.md`, edit, YouTube (Public); link in the README and above
 - [ ] Merge the pull request into `main` and tag `v1.0.0`
