@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+/*
+ * Leash design tokens.
+ * Calm, trustworthy fintech: warm paper neutrals, a deep "leash green" primary,
+ * and three verdict colors (allow / review / block) that carry meaning everywhere.
+ */
+
+:root {
+  --background: #f7f6f2;
+  --surface: #ffffff;
+  --surface-muted: #f1efe9;
+  --border: #e4e1d8;
+  --border-strong: #cfcabd;
+  --foreground: #16181d;
+  --muted: #5e6470;
+  --subtle: #676d78;
+
+  --primary: #0e6b5c;
+  --primary-hover: #0b5a4d;
+  --primary-foreground: #ffffff;
+  --accent: #e5f2ee;
+  --accent-foreground: #0b4f44;
+
+  --allow: #127a4b;
+  --allow-soft: #e6f4ec;
+  --review: #9a5800;
+  --review-soft: #fdf1dc;
+  --block: #b42318;
+  --block-soft: #fdecea;
+  --info: #2457c5;
+  --info-soft: #e8eefb;
+
+  --ring: rgb(14 107 92 / 0.35);
+  --shadow-color: 30 25 10;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #0e1013;
+    --surface: #16191e;
+    --surface-muted: #1c2026;
+    --border: #2a2f37;
+    --border-strong: #3a414c;
+    --foreground: #ecedef;
+    --muted: #9aa1ac;
+    --subtle: #868d98;
+
+    --primary: #3fc1a5;
+    --primary-hover: #5ad0b6;
+    --primary-foreground: #06231d;
+    --accent: #12302a;
+    --accent-foreground: #9fe6d4;
+
+    --allow: #4fcf8f;
+    --allow-soft: #10291d;
+    --review: #f2b04b;
+    --review-soft: #2e2210;
+    --block: #f27a6e;
+    --block-soft: #331614;
+    --info: #7ea6f6;
+    --info-soft: #142039;
+
+    --ring: rgb(63 193 165 / 0.4);
+    --shadow-color: 0 0 0;
+
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: #0e1013;
+  --surface: #16191e;
+  --surface-muted: #1c2026;
+  --border: #2a2f37;
+  --border-strong: #3a414c;
+  --foreground: #ecedef;
+  --muted: #9aa1ac;
+  --subtle: #868d98;
+
+  --primary: #3fc1a5;
+  --primary-hover: #5ad0b6;
+  --primary-foreground: #06231d;
+  --accent: #12302a;
+  --accent-foreground: #9fe6d4;
+
+  --allow: #4fcf8f;
+  --allow-soft: #10291d;
+  --review: #f2b04b;
+  --review-soft: #2e2210;
+  --block: #f27a6e;
+  --block-soft: #331614;
+  --info: #7ea6f6;
+  --info-soft: #142039;
+
+  --ring: rgb(63 193 165 / 0.4);
+  --shadow-color: 0 0 0;
+
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-allow: var(--allow);
+  --color-allow-soft: var(--allow-soft);
+  --color-review: var(--review);
+  --color-review-soft: var(--review-soft);
+  --color-block: var(--block);
+  --color-block-soft: var(--block-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-ring: var(--ring);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --shadow-card: 0 1px 2px rgb(var(--shadow-color) / 0.06), 0 1px 1px rgb(var(--shadow-color) / 0.04);
+  --shadow-raised: 0 8px 24px -8px rgb(var(--shadow-color) / 0.18), 0 2px 6px rgb(var(--shadow-color) / 0.06);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  ::selection {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

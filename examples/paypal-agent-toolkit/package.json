@@ -1,0 +1,17 @@
+{
+  "name": "leash-example-paypal-agent-toolkit",
+  "private": true,
+  "type": "module",
+  "description": "A support agent on PayPal's Agent Toolkit with Leash in front of its money-out tools",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "1.2.12",
+    "@paypal/agent-toolkit": "1.11.0",
+    "ai": "4.3.19"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}

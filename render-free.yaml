@@ -1,0 +1,61 @@
+# Render Blueprint for Leash on Render's free tier (no payment method needed).
+# It manages the existing "palkapalkaogurechik" web service (My project / Production) and adds a
+# free Postgres database. Dashboard → New → Blueprint → this repo → Blueprint Path: render-free.yaml.
+# Trade-offs: the web service sleeps after 15 idle minutes (about a minute to wake), the free
+# database expires after 30 days (upgradeable within 14 more days), and there's no hourly job
+# ("End week now" in the app runs the same renewal + reconciliation). Database migrations run when
+# the app starts. Environment variables not listed here (e.g. PORT) keep their current values.
+version: "1"
+projects:
+  - name: My project
+    environments:
+      - name: Production
+        services:
+          - type: web
+            name: palkapalkaogurechik
+            runtime: node
+            repo: https://github.com/feedddosever/palkapalkaogurechik
+            plan: free
+            region: oregon
+            buildCommand: npm ci && npm run build
+            # The app uses ~300 MB; the start script caps the Node heap for the 512 MB instance.
+            startCommand: npm run start:render
+            healthCheckPath: /api/health
+            autoDeployTrigger: commit
+            envVars:
+              - key: NODE_VERSION
+                value: "22"
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: leash-db
+                  property: connectionString
+              # Ed25519 receipt-signing key, derived from this generated secret (stable across deploys).
+              - key: RECEIPT_SIGNING_KEY
+                generateValue: true
+              - key: CRON_SECRET
+                generateValue: true
+              - key: LAB_DAILY_BUDGET_USD
+                value: "3"
+              - key: AI_DAILY_BUDGET_USD
+                value: "5"
+              # PayPal sandbox app (developer.paypal.com → Apps & Credentials, Sandbox).
+              - key: PAYPAL_CLIENT_ID
+                sync: false
+              - key: PAYPAL_CLIENT_SECRET
+                sync: false
+              # The sandbox test buyer judges log in with to approve the hold (shown on purpose).
+              - key: JUDGE_BUYER_EMAIL
+                sync: false
+              - key: JUDGE_BUYER_PASSWORD
+                sync: false
+              - key: ANTHROPIC_API_KEY
+                sync: false
+              - key: CHANNEL3_API_KEY
+                sync: false
+              - key: NEXT_PUBLIC_AG_GRID_LICENSE_KEY
+                sync: false
+        databases:
+          - name: leash-db
+            plan: free
+            region: oregon
+            postgresMajorVersion: "17"

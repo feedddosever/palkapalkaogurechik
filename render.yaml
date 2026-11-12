@@ -1,0 +1,83 @@
+# Render Blueprint for Leash: Dashboard → New → Blueprint → pick this repo.
+# Paid instance types: Render needs a payment method on file (hackathon credits are used first;
+# this setup is roughly $15/month). No card? Use render-free.yaml instead (set "Blueprint Path").
+# Render asks for the `sync: false` values once, when the Blueprint is created; all are optional
+# (without keys Leash runs on its PayPal simulator and offline AI fallbacks).
+services:
+  - type: web
+    name: leash
+    runtime: node
+    plan: 0.5c-512mb
+    region: oregon
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npm run db:migrate
+    # The app uses ~300 MB; cap the heap on the 512 MB instance (not at build time).
+    startCommand: npm run start:render
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: leash-db
+          property: connectionString
+      # Ed25519 receipt-signing key, derived from this generated secret (stable across deploys).
+      - key: RECEIPT_SIGNING_KEY
+        generateValue: true
+      - key: CRON_SECRET
+        generateValue: true
+      - key: LAB_DAILY_BUDGET_USD
+        value: "3"
+      - key: AI_DAILY_BUDGET_USD
+        value: "5"
+      # The cron job below runs the cycle jobs; the web service doesn't also run them.
+      - key: CYCLE_JOBS_IN_PROCESS
+        value: "off"
+      # PayPal sandbox app (developer.paypal.com → Apps & Credentials, Sandbox).
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      # The sandbox test buyer judges log in with to approve the hold (shown on the onboarding page).
+      - key: JUDGE_BUYER_EMAIL
+        sync: false
+      - key: JUDGE_BUYER_PASSWORD
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CHANNEL3_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_AG_GRID_LICENSE_KEY
+        sync: false
+
+  # Hourly: reauthorize holds after PayPal's honor period, renew ended weeks, reconcile.
+  - type: cron
+    name: leash-cycles
+    runtime: node
+    plan: 0.5c-512mb
+    region: oregon
+    schedule: "17 * * * *"
+    buildCommand: echo "no build needed"
+    startCommand: node scripts/cron-ping.mjs
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: LEASH_INTERNAL
+        fromService:
+          name: leash
+          type: web
+          property: hostport
+      - key: CRON_SECRET
+        fromService:
+          name: leash
+          type: web
+          envVarKey: CRON_SECRET
+
+databases:
+  - name: leash-db
+    plan: 0.1c-256mb
+    region: oregon
+    postgresMajorVersion: "17"
